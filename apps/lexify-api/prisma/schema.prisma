@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+  USER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?  // Hashed password for Admin login
+  name      String?
+  avatar    String?
+  role      Role     @default(USER)
+  status    String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wordSenses     WordSense[]
+  preference     Preference?
+  platformUsage  PlatformUsage[]
+  sessions       Session[]
+}
+
+model WordSense {
+  id        String   @id @default(uuid())
+  userId    String
+  senseId   String   // Hash of word + meaning
+  word      String
+  meaning   String
+  language  String   @default("en")
+  createdAt DateTime @default(now())
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encounters WordEncounter[]
+
+  @@unique([userId, senseId]) // A user should only have one WordSense per unique meaning
+}
+
+model WordEncounter {
+  id              String   @id @default(uuid())
+  wordSenseId     String
+  videoUrl        String
+  timestamp       String?
+  contextSentence String?
+  createdAt       DateTime @default(now())
+
+  wordSense WordSense @relation(fields: [wordSenseId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  language    String   @default("en")
+  hoverMode   Boolean  @default(true)
+  pauseToggle Boolean  @default(true)
+  uiMode      String   @default("compact")
+  theme       String   @default("system")
+  fontSize    Int      @default(15)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Admin Dashboard Models ---
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  ipAddress   String?
+  deviceInfo  String?
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  durationSeconds Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlatformUsage {
+  id          String   @id @default(uuid())
+  userId      String
+  platform    String   // youtube, netflix
+  usageTimeMs Int      @default(0)
+  date        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, platform])
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  isEnabled   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  level       String   // INFO, WARN, ERROR
+  message     String
+  meta        Json?
+  userId      String?  // Optional, if action was by/on a user
+  createdAt   DateTime @default(now())
+
+  @@index([level, createdAt])
+}
+
+model RevenueEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Float
+  currency    String   @default("USD")
+  eventType   String   // SUBSCRIPTION_CREATED, PAYMENT_SUCCESS, PAYMENT_FAILED
+  stripeId    String?  @unique
+  createdAt   DateTime @default(now())
+
+  @@index([userId, eventType])
+}

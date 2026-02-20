@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Lexify",
+  "version": "1.0.0",
+  "description": "Understand Every Word. Instantly.",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "src/content/index.tsx"
+      ]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "identity"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "https://api.dictionaryapi.dev/*"
+  ],
+  "oauth2": {
+    "client_id": "1030368911358-59bv4kb37pqh7tcpo04trskb7ofc1f2n.apps.googleusercontent.com",
+    "scopes": [
+      "email",
+      "profile",
+      "openid"
+    ]
+  }
+}
