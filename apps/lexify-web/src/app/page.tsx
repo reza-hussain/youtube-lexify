@@ -78,9 +78,8 @@ export default function Dashboard() {
       setWords(data);
     } catch (error) {
       console.error("Error fetching words:", error);
-      if (error instanceof TypeError && error.message === "Failed to fetch") {
-        signOut();
-      }
+      // We should not sign out the user just because the backend is temporarily unreachable
+      setWords([]);
     } finally {
       setLoading(false);
     }

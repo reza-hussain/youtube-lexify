@@ -6,7 +6,7 @@ const cspHeader = `
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' blob: data: https://lh3.googleusercontent.com https://www.svgrepo.com https://ui-avatars.com;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' http://localhost:3000 https://*.onrender.com https://*.railway.app;
+    connect-src 'self' http://localhost:3000 http://16.171.224.226 https://*.onrender.com https://*.railway.app;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

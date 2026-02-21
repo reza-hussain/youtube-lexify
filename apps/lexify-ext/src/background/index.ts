@@ -139,7 +139,7 @@ chrome.runtime.onMessage.addListener((request: any, _sender: chrome.runtime.Mess
            return;
         }
 
-        const API_URL = 'http://localhost:3000'; 
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';  
         
         fetch(`${API_URL}/auth/chrome`, {
            method: 'POST',
