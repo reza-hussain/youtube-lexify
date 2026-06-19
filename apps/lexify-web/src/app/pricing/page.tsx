@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
-import { Check, Zap, BookOpen, Brain, Download, Infinity as InfinityIcon, ArrowLeft, AlertTriangle, RotateCcw, Calendar, CreditCard, X } from "lucide-react";
+import { Check, Zap, BookOpen, Brain, Download, Infinity as InfinityIcon, ArrowLeft, AlertTriangle, Calendar, CreditCard, X } from "lucide-react";
 import Link from "next/link";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -168,19 +168,6 @@ export default function PricingPage() {
     finally { setLoading(false); }
   };
 
-  const handleReactivate = async () => {
-    setLoading(true);
-    try {
-      await fetch(`${API}/subscription/reactivate`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${jwt}` },
-      });
-      const r = await fetch(`${API}/subscription/details`, { headers: { Authorization: `Bearer ${jwt}` } });
-      setDetails(await r.json());
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
-  };
-
   const renewalDate = sub?.currentPeriodEnd
     ? new Date(sub.currentPeriodEnd).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
     : null;
@@ -216,18 +203,10 @@ export default function PricingPage() {
             {sub?.cancelAtPeriodEnd && (
               <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
                 <AlertTriangle size={18} className="text-amber-500 mt-0.5 shrink-0" />
-                <div className="flex-1">
+                <div>
                   <p className="text-sm font-semibold text-amber-800">Subscription ending {renewalDate}</p>
-                  <p className="text-xs text-amber-600 mt-0.5">You still have full Pro access until then. Changed your mind?</p>
+                  <p className="text-xs text-amber-600 mt-0.5">You still have full Pro access until then.</p>
                 </div>
-                <button
-                  onClick={handleReactivate}
-                  disabled={loading}
-                  className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  <RotateCcw size={12} />
-                  Keep Pro
-                </button>
               </div>
             )}
 
