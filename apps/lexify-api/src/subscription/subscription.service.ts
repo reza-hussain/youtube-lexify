@@ -124,7 +124,7 @@ export class SubscriptionService {
     status: string;
     subscription: {
       id: string;
-      stripeStatus: string;
+      providerStatus: string;
       cancelAtPeriodEnd: boolean;
       currentPeriodEnd: string | null;
       planName: string;
@@ -162,7 +162,7 @@ export class SubscriptionService {
         status: user.subscriptionStatus,
         subscription: {
           id: sub.id,
-          stripeStatus: sub.status,
+          providerStatus: sub.status,
           cancelAtPeriodEnd: sub.cancel_at_period_end,
           currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           planName: interval === 'year' ? 'Annual' : 'Monthly',
@@ -186,12 +186,12 @@ export class SubscriptionService {
         status: user.subscriptionStatus,
         subscription: {
           id: sub.id,
-          stripeStatus: sub.status,
-          cancelAtPeriodEnd: sub.status === 'cancelled',
+          providerStatus: sub.status,
+          cancelAtPeriodEnd: !!sub.cancel_at_cycle_end,
           currentPeriodEnd: currentEnd ? new Date(currentEnd * 1000).toISOString() : null,
           planName: isAnnual ? 'Annual' : 'Monthly',
           amount,
-          currency: (plan?.item?.unit ?? 'INR').toUpperCase(),
+          currency: (plan?.item?.currency ?? 'INR').toUpperCase(),
         },
       };
     }

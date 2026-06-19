@@ -40,7 +40,7 @@ interface SubDetails {
   status: string;
   subscription: {
     id: string;
-    stripeStatus: string;
+    providerStatus: string;
     cancelAtPeriodEnd: boolean;
     currentPeriodEnd: string;
     planName: string;
