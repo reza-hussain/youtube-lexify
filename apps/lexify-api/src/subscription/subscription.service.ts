@@ -180,6 +180,7 @@ export class SubscriptionService {
       const isAnnual = String(sub.plan_id) === process.env.RAZORPAY_PLAN_ID_ANNUAL;
       // plan.item.amount is in paise — divide by 100 for rupees
       const amount = plan?.item?.amount != null ? plan.item.amount / 100 : null;
+      const cancelAtPeriodEnd = user.subscriptionStatus === 'CANCELED' || !!sub.cancel_at_cycle_end;
 
       return {
         tier: user.subscriptionTier,
@@ -187,7 +188,7 @@ export class SubscriptionService {
         subscription: {
           id: sub.id,
           providerStatus: sub.status,
-          cancelAtPeriodEnd: !!sub.cancel_at_cycle_end,
+          cancelAtPeriodEnd,
           currentPeriodEnd: currentEnd ? new Date(currentEnd * 1000).toISOString() : null,
           planName: isAnnual ? 'Annual' : 'Monthly',
           amount,
@@ -216,6 +217,10 @@ export class SubscriptionService {
 
     if (user.razorpaySubscriptionId) {
       await (this.razorpay.subscriptions as any).cancel(user.razorpaySubscriptionId, true);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { subscriptionStatus: 'CANCELED' },
+      });
       return { ok: true };
     }
 
