@@ -235,9 +235,10 @@ export class SubscriptionService {
       select: { name: true, email: true },
     });
 
+    const isAnnual = planId === process.env.RAZORPAY_PLAN_ID_ANNUAL;
     const subscription = await this.razorpay.subscriptions.create({
       plan_id: planId,
-      total_count: 60, // 5 years worth of billing cycles (Razorpay max is 100)
+      total_count: isAnnual ? 10 : 120, // 10 years for annual, 10 years for monthly
       quantity: 1,
       customer_notify: 1,
     });
