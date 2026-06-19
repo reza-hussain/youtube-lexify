@@ -204,28 +204,44 @@ export class SubscriptionService {
   async cancelAtPeriodEnd(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { stripeSubscriptionId: true },
+      select: { stripeSubscriptionId: true, razorpaySubscriptionId: true },
     });
-    if (!user.stripeSubscriptionId) throw new NotFoundException('No active subscription');
 
-    await this.stripe.subscriptions.update(user.stripeSubscriptionId, {
-      cancel_at_period_end: true,
-    });
-    return { ok: true };
+    if (user.stripeSubscriptionId) {
+      await this.stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+      return { ok: true };
+    }
+
+    if (user.razorpaySubscriptionId) {
+      await (this.razorpay.subscriptions as any).cancel(user.razorpaySubscriptionId, true);
+      return { ok: true };
+    }
+
+    throw new NotFoundException('No active subscription');
   }
 
   /** Reactivate a subscription that was set to cancel at period end. */
   async reactivate(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { stripeSubscriptionId: true },
+      select: { stripeSubscriptionId: true, razorpaySubscriptionId: true },
     });
-    if (!user.stripeSubscriptionId) throw new NotFoundException('No active subscription');
 
-    await this.stripe.subscriptions.update(user.stripeSubscriptionId, {
-      cancel_at_period_end: false,
-    });
-    return { ok: true };
+    if (user.stripeSubscriptionId) {
+      await this.stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+      return { ok: true };
+    }
+
+    // Razorpay doesn't support un-cancelling; inform the user
+    if (user.razorpaySubscriptionId) {
+      throw new BadRequestException('Razorpay subscriptions cannot be reactivated once scheduled for cancellation. Please subscribe again after the current period ends.');
+    }
+
+    throw new NotFoundException('No active subscription');
   }
 
   /** Create a Razorpay subscription and return the details needed by the frontend. */
