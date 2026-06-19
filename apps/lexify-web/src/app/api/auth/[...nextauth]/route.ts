@@ -9,6 +9,51 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
     CredentialsProvider({
+      id: "user-credentials",
+      name: "Email",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/login`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+            },
+          );
+          if (!res.ok) return null;
+          const { access_token, user } = await res.json();
+          return { ...user, accessToken: access_token } as any;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    CredentialsProvider({
+      id: "extension-jwt",
+      name: "Extension",
+      credentials: { jwt: { type: "text" } },
+      async authorize(credentials) {
+        if (!credentials?.jwt) return null;
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/auth/me`,
+            { headers: { Authorization: `Bearer ${credentials.jwt}` } },
+          );
+          if (!res.ok) return null;
+          const user = await res.json();
+          return { ...user, accessToken: credentials.jwt } as any;
+        } catch {
+          return null;
+        }
+      },
+    }),
+    CredentialsProvider({
       name: "Admin Login",
       credentials: {
         email: { label: "Email", type: "email" },

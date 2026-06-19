@@ -18,6 +18,16 @@
       "js": [
         "src/content/index.tsx"
       ]
+    },
+    {
+      "matches": [
+        "http://localhost:3001/*",
+        "https://lexify.app/*"
+      ],
+      "js": [
+        "src/content/dashboard.ts"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "permissions": [
@@ -28,7 +38,11 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
-    "https://api.dictionaryapi.dev/*"
+    "https://api.dictionaryapi.dev/*",
+    "http://localhost/*",
+    "https://*.onrender.com/*",
+    "https://lexify.app/*",
+    "https://youtube-lexify.vercel.app/*"
   ],
   "oauth2": {
     "client_id": "1030368911358-59bv4kb37pqh7tcpo04trskb7ofc1f2n.apps.googleusercontent.com",

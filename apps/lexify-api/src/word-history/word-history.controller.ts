@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { WordHistoryService } from './word-history.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -14,10 +14,16 @@ export class WordHistoryController {
     return this.wordHistoryService.saveWord(userId, word, meaning, videoUrl, timestamp, contextSentence);
   }
 
+  @Get('define/:word')
+  async defineWord(@Request() req: any, @Param('word') word: string) {
+    return this.wordHistoryService.defineWord(req.user.id, word);
+  }
+
   @Get()
   async getHistory(@Request() req: any) {
     try {
-      return await this.wordHistoryService.getHistory(req.user.id);
+      const words = await this.wordHistoryService.getHistory(req.user.id);
+      return words;
     } catch (e) {
       console.error("GET /words ERROR:", e);
       throw e;

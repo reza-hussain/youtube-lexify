@@ -191,28 +191,25 @@ let currentVideo: HTMLVideoElement | null = null;
 let pauseTimeout: number | null = null;
 let hoverTimeout: number | null = null;
 let currentWord: string | null = null;
-let isLexifyEnabled = true;
+let lexifyMode: 'hover' | 'click' = 'hover';
 
-// Initialize enabled state from storage ASAP
+// Initialize mode from storage ASAP
 if (typeof chrome !== 'undefined' && chrome.storage) {
-  chrome.storage.local.get(['lexifyEnabled'], (result) => {
-    if (result.lexifyEnabled !== undefined && result.lexifyEnabled !== null) {
-      isLexifyEnabled = !!result.lexifyEnabled;
-    }
+  chrome.storage.local.get(['lexifyMode'], (result) => {
+    lexifyMode = result.lexifyMode ?? 'hover';
   });
 
-  // Listen for Live toggle changes from popup
+  // Live-sync mode changes from popup
   chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && changes.lexifyEnabled) {
-      isLexifyEnabled = !!changes.lexifyEnabled.newValue;
-      if (!isLexifyEnabled) {
-        // Immediately dismiss panel and resume video if user toggles off while watching
+    if (namespace === 'local' && changes.lexifyMode) {
+      lexifyMode = changes.lexifyMode.newValue ?? 'hover';
+      // Clear any active hover panel when switching modes
+      if (!((window as any).lexifyIsPersistent)) {
         currentWord = null;
         dispatchDefinitionEvent('CLEAR');
-        if (currentVideo && currentVideo.paused && (window as any).lexifyIsPersistent) {
-           (window as any).lexifyIsPersistent = false;
-           currentVideo.play();
-        }
+      }
+      if (currentVideo && currentVideo.paused && !((window as any).lexifyIsPersistent)) {
+        currentVideo.play();
       }
     }
   });
@@ -352,7 +349,7 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
 };
 
 const onWordHover = (event: MouseEvent) => {
-  if (!isLexifyEnabled) return;
+  if (lexifyMode !== 'hover') return;
   const target = event.target as HTMLElement;
   let wordSpan = target.closest('.lexify-word') as HTMLElement;
   let captionSegment = target.closest('.ytp-caption-segment') as HTMLElement;
@@ -392,6 +389,7 @@ const onWordHover = (event: MouseEvent) => {
 };
 
 const onWordHoverOut = () => {
+  if (lexifyMode !== 'hover') return;
   if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       hoverTimeout = null;

@@ -4,7 +4,8 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true is required for Stripe webhook signature verification
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   
   // Set Security Headers
   app.use(helmet({ crossOriginResourcePolicy: false }));

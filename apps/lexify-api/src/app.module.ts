@@ -12,19 +12,21 @@ import { APP_GUARD } from '@nestjs/core';
 import { EmailModule } from './email/email.module';
 import { AdminModule } from './admin/admin.module';
 import { PingModule } from './ping/ping.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{
-       ttl: 60000, 
-       limit: 100 
+       ttl: 60000,
+       limit: 100
     }]),
-    PrismaModule, 
-    AuthModule, 
-    WordHistoryModule, 
-    PreferenceModule, EmailModule, AdminModule, PingModule
+    PrismaModule,
+    AuthModule,
+    WordHistoryModule,
+    PreferenceModule, EmailModule, AdminModule, PingModule, SubscriptionModule, UsersModule
   ],
   controllers: [AppController],
   providers: [

@@ -15,10 +15,11 @@ import { EmailModule } from '../email/email.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'youtube-lexify-786110',
-        signOptions: { expiresIn: '30d' },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) throw new Error('JWT_SECRET environment variable is not set');
+        return { secret, signOptions: { expiresIn: '30d' } };
+      },
     }),
   ],
   controllers: [AuthController],

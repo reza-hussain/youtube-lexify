@@ -1,136 +1,246 @@
 import { useState, useEffect } from 'react';
 import './index.css';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const WEB_URL = import.meta.env.VITE_WEB_URL || 'http://localhost:3001';
+
+interface StatusData {
+  dailyLookupCount: number;
+  dailyLimit: number | null;
+  remaining: number | null;
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
-  const [isEnabled, setIsEnabled] = useState<boolean>(true);
+  const [mode, setMode] = useState<'hover' | 'click'>('hover');
+  const [status, setStatus] = useState<StatusData | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkLoginStatus();
-    // Load initial toggle state
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['lexifyEnabled'], (result) => {
-        if (result.lexifyEnabled !== undefined && result.lexifyEnabled !== null) {
-          setIsEnabled(!!result.lexifyEnabled);
-        } else {
-          // Default to true if not set
-          chrome.storage.local.set({ lexifyEnabled: true });
-        }
-      });
-    }
+    chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt', 'lexifyMode'], (result) => {
+      const isValid = !!(result.lexifyJwt && result.lexifyJwtExpiresAt > Date.now());
+      setIsLoggedIn(isValid);
+      setMode(result.lexifyMode ?? 'hover');
+      if (isValid) fetchStatus(result.lexifyJwt);
+    });
   }, []);
 
-  const checkLoginStatus = () => {
-    if (typeof chrome !== 'undefined' && chrome.identity) {
-      chrome.identity.getAuthToken({ interactive: false }, function(token) {
-        if (!chrome.runtime.lastError && token) {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
+  const fetchStatus = async (jwt: string) => {
+    try {
+      const res = await fetch(`${API}/subscription/status`, {
+        headers: { Authorization: `Bearer ${jwt}` },
       });
-    } else {
-      setIsLoggedIn(false);
-    }
+      if (res.ok) setStatus(await res.json());
+    } catch {}
   };
 
   const handleLogin = () => {
-    chrome.runtime.sendMessage({ type: 'INITIATE_LOGIN' }, (response) => {
-      if (response && response.status === 'success') {
-        setIsLoggedIn(true);
-      } else {
-        alert("Login failed or was canceled. Please try again.");
+    setLoginError(null);
+    setLoginLoading(true);
+
+    if (!chrome?.identity) {
+      setLoginError('chrome.identity API not available');
+      setLoginLoading(false);
+      return;
+    }
+
+    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
+      if (chrome.runtime.lastError || !token) {
+        const msg = chrome.runtime.lastError?.message ?? 'No token returned';
+        setLoginError(msg);
+        setLoginLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/auth/chrome`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+        const { access_token } = await res.json();
+        const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
+        chrome.storage.local.set(
+          { lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt, guestLookupCount: 0 },
+          () => {
+            setIsLoggedIn(true);
+            fetchStatus(access_token);
+            setLoginLoading(false);
+          },
+        );
+      } catch (err: any) {
+        setLoginError(err.message ?? 'Unknown error');
+        setLoginLoading(false);
       }
     });
   };
 
   const handleLogout = () => {
-    chrome.runtime.sendMessage({ type: 'FORCE_LOGOUT' }, (response) => {
-      if (response && response.status === 'success') {
-        setIsLoggedIn(false);
-      }
+    chrome.storage.local.remove(['lexifyJwt', 'lexifyJwtExpiresAt'], () => {
+      chrome.identity.getAuthToken({ interactive: false }, (token) => {
+        const clearState = () => {
+          setIsLoggedIn(false);
+          setStatus(null);
+        };
+        if (!token) { clearState(); return; }
+        fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`)
+          .finally(() => {
+            chrome.identity.removeCachedAuthToken({ token }, () => {
+              chrome.identity.clearAllCachedAuthTokens(clearState);
+            });
+          });
+      });
     });
   };
 
-  const toggleExtensions = () => {
-    const newState = !isEnabled;
-    setIsEnabled(newState);
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.set({ lexifyEnabled: newState });
-    }
+  const handleModeChange = (newMode: 'hover' | 'click') => {
+    setMode(newMode);
+    chrome.storage.local.set({ lexifyMode: newMode });
   };
 
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (isLoggedIn === null) {
+    return (
+      <div className="w-75 h-45 bg-slate-50 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // ── Signed-out ─────────────────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    return (
+      <div className="w-75 bg-slate-50 flex flex-col items-center p-6 font-sans">
+        <div className="flex flex-col items-center mb-7 mt-1">
+          <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center mb-3">
+            <span className="text-white text-2xl font-bold">L</span>
+          </div>
+          <h1 className="text-xl font-bold text-slate-800">Lexify</h1>
+          <p className="text-sm text-slate-500 mt-1 text-center leading-snug">
+            Learn words from YouTube subtitles
+          </p>
+        </div>
+
+        <div className="w-full bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <p className="text-center text-slate-600 text-sm mb-4 leading-relaxed">
+            Sign in to save vocabulary and sync across devices.
+          </p>
+          <button
+            onClick={handleLogin}
+            disabled={loginLoading}
+            className="w-full py-3 px-4 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 shadow-md transition-all flex items-center justify-center gap-2.5 text-sm disabled:opacity-60"
+          >
+            {loginLoading ? (
+              <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="" className="w-4 h-4" />
+            )}
+            {loginLoading ? 'Signing in…' : 'Sign in with Google'}
+          </button>
+          {loginError && (
+            <p className="text-[11px] text-red-500 font-medium mt-2 text-center break-all">
+              {loginError}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Signed-in ──────────────────────────────────────────────────────────────
+  const count = status?.dailyLookupCount ?? 0;
+  const limit = status?.dailyLimit ?? null;
+  const pct = limit ? Math.min(100, (count / limit) * 100) : 0;
+  const barColor = limit && count >= limit ? 'bg-red-400' : 'bg-blue-500';
+
   return (
-    <div className="w-[320px] bg-slate-50 flex flex-col items-center justify-start p-6 text-slate-800 font-sans min-h-[440px]">
-      
-      {/* Header Section */}
-      <div className="w-full flex items-center justify-between mb-8">
-         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 shadow-md flex items-center justify-center">
-              <span className="text-white text-xl font-bold">L</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-800">Lexify</h1>
-         </div>
+    <div className="w-75 bg-slate-50 flex flex-col p-5 font-sans gap-3">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shrink-0">
+            <span className="text-white font-bold text-base">L</span>
+          </div>
+          <span className="font-bold text-slate-800 text-base">Lexify</span>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium"
+        >
+          Sign out
+        </button>
       </div>
 
-      {/* Main Toggle Section */}
-      <div className="w-full bg-white rounded-2xl p-5 shadow-sm border border-slate-200 mb-6 flex items-center justify-between">
-         <div className="flex flex-col">
-            <span className="font-semibold text-[15px] text-slate-800">Enable Lexify</span>
-            <span className="text-[12px] text-slate-500 leading-tight mt-0.5">Toggle subtitle hovers</span>
-         </div>
-         <button 
-            onClick={toggleExtensions}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${isEnabled ? 'bg-blue-500' : 'bg-slate-300'}`}
-         >
-            <span 
-               className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-300 ease-in-out ${isEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+      {/* Hover / Click toggle */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2.5">
+          Trigger Mode
+        </p>
+        <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+          <button
+            onClick={() => handleModeChange('hover')}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+              mode === 'hover'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Hover
+          </button>
+          <button
+            onClick={() => handleModeChange('click')}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
+              mode === 'click'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Click
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-400 mt-2 text-center">
+          {mode === 'hover'
+            ? 'Hover over a subtitle word to see its meaning'
+            : 'Click a subtitle word to see its meaning'}
+        </p>
+      </div>
+
+      {/* Daily lookups */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
+          Today's Lookups
+        </p>
+        <div className="flex items-end justify-between mb-2.5">
+          <span className="text-3xl font-extrabold text-slate-800">{count}</span>
+          <span className="text-sm text-slate-400 mb-0.5 font-medium">
+            {limit === null ? 'unlimited' : `/ ${limit}`}
+          </span>
+        </div>
+        {limit !== null && (
+          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${barColor} rounded-full transition-all duration-500`}
+              style={{ width: `${pct}%` }}
             />
-         </button>
-      </div>
-      
-      {/* Auth Section */}
-      <div className="w-full h-[1px] bg-slate-200 mb-6"></div>
-
-      <div className="w-full flex-grow flex flex-col justify-end">
-        {isLoggedIn === null ? (
-          <div className="flex justify-center py-4">
-             <p className="text-slate-400 text-sm animate-pulse font-medium">Checking status...</p>
-          </div>
-        ) : isLoggedIn ? (
-          <div className="flex flex-col items-center w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="bg-green-50 text-green-700 px-3 py-1.5 rounded-full font-medium text-[13px] flex items-center gap-2 mb-3 border border-green-100/50 w-full justify-center">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              Cloud Sync Active
-            </div>
-            <p className="text-center text-slate-500 mb-5 text-[13px] leading-relaxed">
-              Your words are actively syncing to your dashboard.
-            </p>
-            <button 
-              onClick={handleLogout}
-              className="w-full py-2.5 bg-slate-50 text-slate-600 font-semibold rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-800 transition-colors text-sm"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center w-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-3">
-               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            </div>
-            <p className="text-center text-slate-600 mb-5 text-[13px] leading-relaxed">
-              Sign in to save and review your vocabulary on the web dashboard.
-            </p>
-            <button 
-              onClick={handleLogin}
-              className="w-full py-2.5 px-4 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm"
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo" className="w-4 h-4" />
-              Sign in with Google
-            </button>
           </div>
         )}
+        {limit !== null && count >= limit && (
+          <p className="text-[11px] text-red-500 font-medium mt-2">
+            Daily limit reached. Upgrade to Pro for unlimited lookups.
+          </p>
+        )}
       </div>
+
+      {/* Go to Dashboard */}
+      <a
+        href={WEB_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="w-full py-2.5 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors text-sm text-center"
+      >
+        Go to Dashboard →
+      </a>
     </div>
   );
 }

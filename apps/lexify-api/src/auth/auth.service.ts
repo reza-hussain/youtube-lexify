@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
+import { Request } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,38 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {
     this.googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  }
+
+  async registerUser(email: string, password: string, name?: string) {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) throw new BadRequestException('Email already in use');
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await this.prisma.user.create({
+      data: { email, password: hashed, name: name || email.split('@')[0] },
+    });
+
+    this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
+
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    };
+  }
+
+  async loginUser(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.password) throw new UnauthorizedException('Invalid credentials');
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+
+    const payload = { email: user.email, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    };
   }
 
   async verifyAdminCredentials(email: string, passwordString: string) {
@@ -46,7 +79,29 @@ export class AuthService {
     };
   }
 
-  async verifyChromeToken(accessToken: string) {
+  private async openSession(userId: string, req?: Request): Promise<string> {
+    const ipAddress = req
+      ? ((req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ?? req.ip ?? null)
+      : null;
+    const deviceInfo = req ? (req.headers['user-agent'] ?? null) : null;
+    const session = await this.prisma.session.create({
+      data: { userId, ipAddress, deviceInfo },
+    });
+    return session.id;
+  }
+
+  async closeSession(sessionId: string): Promise<void> {
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (!session) return;
+    const endedAt = new Date();
+    const durationSeconds = Math.floor((endedAt.getTime() - session.startedAt.getTime()) / 1000);
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { endedAt, durationSeconds },
+    });
+  }
+
+  async verifyChromeToken(accessToken: string, req?: Request) {
      try {
        // Chrome Identity API gives us an access token
        const tokenInfo = await this.googleClient.getTokenInfo(accessToken);
@@ -72,9 +127,11 @@ export class AuthService {
        }
 
        const payload = { email: user.email, sub: user.id };
+       const sessionId = await this.openSession(user.id, req);
        return {
           access_token: this.jwtService.sign(payload),
-          user
+          session_id: sessionId,
+          user,
        };
 
      } catch (err) {
@@ -82,7 +139,7 @@ export class AuthService {
        throw new UnauthorizedException('Failed to verify Google token');
      }
   }
-  async verifyWebToken(idToken: string) {
+  async verifyWebToken(idToken: string, req?: Request) {
      try {
        // Web dashboard uses NextAuth, which gives us an ID token
        const ticket = await this.googleClient.verifyIdToken({
@@ -113,9 +170,11 @@ export class AuthService {
        }
 
        const payload = { email: user.email, sub: user.id };
+       const sessionId = await this.openSession(user.id, req);
        return {
           access_token: this.jwtService.sign(payload),
-          user
+          session_id: sessionId,
+          user,
        };
 
      } catch (err) {

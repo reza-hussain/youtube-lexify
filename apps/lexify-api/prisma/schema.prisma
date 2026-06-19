@@ -13,6 +13,18 @@ enum Role {
   USER
 }
 
+enum SubscriptionTier {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  NONE
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -21,6 +33,18 @@ model User {
   avatar    String?
   role      Role     @default(USER)
   status    String   @default("ACTIVE") // ACTIVE, SUSPENDED
+
+  // Subscription
+  subscriptionTier    SubscriptionTier   @default(FREE)
+  subscriptionStatus  SubscriptionStatus @default(NONE)
+  stripeCustomerId       String? @unique
+  stripeSubscriptionId   String? @unique
+  razorpaySubscriptionId String? @unique
+
+  // Quota tracking (resets daily)
+  dailyLookupCount    Int      @default(0)
+  dailyLookupResetAt  DateTime @default(now())
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -92,6 +116,7 @@ model PlatformUsage {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, platform, date])
   @@index([userId, platform])
 }
 
