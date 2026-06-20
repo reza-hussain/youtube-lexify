@@ -1,10 +1,14 @@
 import { Controller, Post, Get, Body, Req, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post('register')
   register(@Body() body: { email: string; password: string; name?: string }) {
@@ -39,8 +43,9 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@Request() req: any) {
-    return { id: req.user.id, email: req.user.email, name: req.user.name };
+  async me(@Request() req: any) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: req.user.id } });
+    return { id: user.id, email: user.email, name: user.name, image: user.avatar };
   }
 
   @Post('session/close')

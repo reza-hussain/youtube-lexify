@@ -39,38 +39,22 @@ function App() {
     setLoginError(null);
     setLoginLoading(true);
 
-    if (!chrome?.identity) {
-      setLoginError('chrome.identity API not available');
-      setLoginLoading(false);
-      return;
-    }
-
-    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-      if (chrome.runtime.lastError || !token) {
-        const msg = chrome.runtime.lastError?.message ?? 'No token returned';
-        setLoginError(msg);
-        setLoginLoading(false);
+    // Auth runs in background service worker so it survives the popup closing.
+    // When the popup reopens, the useEffect on mount picks up the stored JWT.
+    chrome.runtime.sendMessage({ type: 'INITIATE_GOOGLE_LOGIN' }, (response) => {
+      if (chrome.runtime.lastError) {
+        // Popup was closed mid-flow — recheck storage on next open (handled by mount effect)
         return;
       }
-      try {
-        const res = await fetch(`${API}/auth/chrome`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
+      if (response?.status === 'success') {
+        chrome.storage.local.get(['lexifyJwt'], (result) => {
+          const jwt = result.lexifyJwt as string;
+          setIsLoggedIn(true);
+          fetchStatus(jwt);
+          setLoginLoading(false);
         });
-        if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
-        const { access_token } = await res.json();
-        const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
-        chrome.storage.local.set(
-          { lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt, guestLookupCount: 0 },
-          () => {
-            setIsLoggedIn(true);
-            fetchStatus(access_token);
-            setLoginLoading(false);
-          },
-        );
-      } catch (err: any) {
-        setLoginError(err.message ?? 'Unknown error');
+      } else {
+        setLoginError(response?.error ?? 'Sign-in failed');
         setLoginLoading(false);
       }
     });

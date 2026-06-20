@@ -178,6 +178,47 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    // ── INITIATE_GOOGLE_LOGIN (launchWebAuthFlow — survives popup close) ────
+    if (request.type === 'INITIATE_GOOGLE_LOGIN') {
+      const redirectUri = chrome.identity.getRedirectURL();
+      const params = new URLSearchParams({
+        client_id: '1030368911358-8j2pbjah5er7euk0mh83vaitjdpop88k.apps.googleusercontent.com',
+        redirect_uri: redirectUri,
+        response_type: 'token',
+        scope: 'email profile openid',
+        prompt: 'select_account',
+      });
+      const authUrl = `https://accounts.google.com/o/oauth2/auth?${params.toString()}`;
+
+      chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
+        if (chrome.runtime.lastError || !responseUrl) {
+          sendResponse({ status: 'error', error: chrome.runtime.lastError?.message ?? 'Sign-in cancelled' });
+          return;
+        }
+        try {
+          const hash = new URL(responseUrl).hash.slice(1);
+          const token = new URLSearchParams(hash).get('access_token');
+          if (!token) throw new Error('No access token in response');
+
+          const res = await fetch(`${API_URL}/auth/chrome`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
+          if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+          const { access_token } = await res.json();
+          const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
+          await new Promise<void>(resolve => {
+            chrome.storage.local.set({ lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt, guestLookupCount: 0 }, resolve);
+          });
+          sendResponse({ status: 'success' });
+        } catch (err) {
+          sendResponse({ status: 'error', error: String(err) });
+        }
+      });
+      return true;
+    }
+
     // ── INITIATE_LOGIN ─────────────────────────────────────────────────────
     if (request.type === 'INITIATE_LOGIN') {
       chrome.identity.getAuthToken({ interactive: true }, async (token) => {
