@@ -114,7 +114,8 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
       const clean = text.replace(/```json\n?|```/g, '').trim();
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return JSON.parse(clean);
-    } catch {
+    } catch (err) {
+      console.error('[AiService] Gemini call failed:', err);
       return null;
     }
   }
