@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PROVIDER_CACHE_TTL_MS = 60_000;
@@ -7,6 +8,7 @@ const PROVIDER_CACHE_TTL_MS = 60_000;
 @Injectable()
 export class AiService {
   private anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  private gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   private providerCache: { value: string; expiresAt: number } | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -90,14 +92,30 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
   }
 
   private async callGemini(
-    _word: string,
-    _sentence: string,
-    _encounterCount: number,
+    word: string,
+    sentence: string,
+    encounterCount: number,
   ): Promise<any[] | null> {
-    // To enable: npm install @google/generative-ai in lexify-api, set GEMINI_API_KEY env var,
-    // then replace this stub with the Gemini SDK call using the same response format as callClaude.
-    throw new Error(
-      'Gemini provider not yet configured. Switch aiProvider back to "claude" in admin settings.',
-    );
+    const userContent = sentence
+      ? `Word: "${word}"\nContext sentence: "${sentence}"`
+      : `Word: "${word}"`;
+
+    try {
+      const response = await this.gemini.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: userContent,
+        config: {
+          systemInstruction: this.buildSystemPrompt(encounterCount),
+          maxOutputTokens: 400,
+        },
+      });
+
+      const text = response.text ?? '';
+      const clean = text.replace(/```json\n?|```/g, '').trim();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return JSON.parse(clean);
+    } catch {
+      return null;
+    }
   }
 }
