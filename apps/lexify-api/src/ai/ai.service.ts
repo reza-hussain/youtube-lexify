@@ -102,7 +102,7 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
 
     try {
       const response = await this.gemini.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-lite',
         contents: userContent,
         config: {
           systemInstruction: this.buildSystemPrompt(encounterCount),
