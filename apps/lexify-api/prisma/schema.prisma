@@ -57,13 +57,14 @@ model User {
 }
 
 model WordSense {
-  id        String   @id @default(uuid())
-  userId    String
-  senseId   String   // Hash of word + meaning
-  word      String
-  meaning   String
-  language  String   @default("en")
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String
+  senseId     String   // Hash of word + meaning
+  word        String
+  meaning     String
+  language    String   @default("en")
+  isFavourite Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   encounters WordEncounter[]

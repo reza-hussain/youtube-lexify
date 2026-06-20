@@ -40,6 +40,7 @@ const LexifyOverlay = () => {
   const [requireLogin, setRequireLogin] = useState(false);
   const [isPersistent, setIsPersistent] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [nonEnglish, setNonEnglish] = useState(false);
 
   useEffect(() => {
     const handleReceiveDefinition = (event: Event) => {
@@ -69,6 +70,9 @@ const LexifyOverlay = () => {
         setLoading(false);
         setRequireLogin(false);
         setDefinitionData(null);
+      } else if (customEvent.detail.type === 'NON_ENGLISH') {
+        setNonEnglish(true);
+        setTimeout(() => setNonEnglish(false), 6000);
       }
     };
 
@@ -98,9 +102,10 @@ const LexifyOverlay = () => {
      : "absolute top-24 right-10 w-96 p-5 bg-[#E2E6EB80] backdrop-blur-[30px] rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 pointer-events-auto";
 
   return (
+    <>
     <AnimatePresence>
       {isVisible && (
-        <motion.div 
+        <motion.div
            layout
            initial={{ opacity: 0, y: 15, scale: 0.96 }}
            animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -194,6 +199,20 @@ const LexifyOverlay = () => {
         </motion.div>
       )}
     </AnimatePresence>
+    <AnimatePresence>
+      {nonEnglish && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-800/90 backdrop-blur-md text-white text-[13px] font-medium px-4 py-2.5 rounded-full shadow-xl border border-white/10 pointer-events-none whitespace-nowrap"
+        >
+          🌐 Lexify works with English captions — switch captions to English to enable
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 };
 
@@ -234,12 +253,41 @@ const dispatchDefinitionEvent = (type: string, payload?: any, word?: string) => 
   window.dispatchEvent(event);
 };
 
+const getCaptionLanguage = (): string | null => {
+  try {
+    const player = document.querySelector('#movie_player') as any;
+    const track = player?.getOption?.('captions', 'track');
+    return track?.languageCode ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const isLikelyEnglish = (text: string): boolean => {
+  if (!text || text.trim().length < 3) return true;
+  const nonAscii = text.split('').filter(c => c.charCodeAt(0) > 127).length;
+  return nonAscii / text.length < 0.2;
+};
+
 // Helper to tokenize a caption segment by wrapping words in spans so hover works perfectly
 const tokenizeCaptionSegment = (segment: HTMLElement) => {
   if (segment.hasAttribute('data-lexify-tokenized')) return;
-  segment.setAttribute('data-lexify-tokenized', 'true');
+  if (segment.hasAttribute('data-lexify-skipped')) return;
 
   const text = segment.textContent || '';
+
+  const lang = getCaptionLanguage();
+  const isEnglish = lang ? lang.startsWith('en') : isLikelyEnglish(text);
+  if (!isEnglish) {
+    segment.setAttribute('data-lexify-skipped', 'true');
+    if (!(window as any).lexifyNonEnglishShown) {
+      (window as any).lexifyNonEnglishShown = true;
+      dispatchDefinitionEvent('NON_ENGLISH');
+    }
+    return;
+  }
+
+  segment.setAttribute('data-lexify-tokenized', 'true');
   const words = text.split(/([\s\u00A0]+)/); 
 
   segment.textContent = ''; 
@@ -364,7 +412,6 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
 };
 
 const onWordHover = (event: MouseEvent) => {
-  if (lexifyMode !== 'hover') return;
   const target = event.target as HTMLElement;
   let wordSpan = target.closest('.lexify-word') as HTMLElement;
   let captionSegment = target.closest('.ytp-caption-segment') as HTMLElement;
@@ -374,6 +421,8 @@ const onWordHover = (event: MouseEvent) => {
      tokenizeCaptionSegment(captionSegment);
      return;
   }
+
+  if (lexifyMode !== 'hover') return;
   if (!wordSpan) return;
 
   const rawWord = wordSpan.textContent?.trim() || "";
@@ -444,7 +493,10 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 } else {
   window.addEventListener('load', setupSubtitleObserver);
 }
-window.addEventListener('yt-navigate-finish', () => { setTimeout(setupSubtitleObserver, 1000) });
+window.addEventListener('yt-navigate-finish', () => {
+  (window as any).lexifyNonEnglishShown = false;
+  setTimeout(setupSubtitleObserver, 1000);
+});
 
 // Keep the window variable in sync with React state so vanilla JS can block hovers/resume
 window.addEventListener('LEXIFY_DEFINITION', (e: Event) => {

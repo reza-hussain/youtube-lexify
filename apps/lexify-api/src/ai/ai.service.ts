@@ -15,14 +15,23 @@ export class AiService {
     if (this.providerCache && this.providerCache.expiresAt > Date.now()) {
       return this.providerCache.value;
     }
-    const setting = await this.prisma.appSetting.findUnique({ where: { key: 'aiProvider' } });
+    const setting = await this.prisma.appSetting.findUnique({
+      where: { key: 'aiProvider' },
+    });
     const value = setting?.value ?? 'claude';
-    this.providerCache = { value, expiresAt: Date.now() + PROVIDER_CACHE_TTL_MS };
+    this.providerCache = {
+      value,
+      expiresAt: Date.now() + PROVIDER_CACHE_TTL_MS,
+    };
     return value;
   }
 
   /** Returns a definition array in the same format as Free Dictionary API. */
-  async getDefinition(word: string, sentence: string, encounterCount: number): Promise<any[] | null> {
+  async getDefinition(
+    word: string,
+    sentence: string,
+    encounterCount: number,
+  ): Promise<any[] | null> {
     const provider = await this.getProvider();
 
     if (provider === 'gemini') {
@@ -56,7 +65,11 @@ ${extrasField}
 If a context sentence is provided, tailor the definition to that exact usage.${wantsExtras ? ' The user has seen this word multiple times — make the definition and tip especially memorable.' : ''}`;
   }
 
-  private async callClaude(word: string, sentence: string, encounterCount: number): Promise<any[] | null> {
+  private async callClaude(
+    word: string,
+    sentence: string,
+    encounterCount: number,
+  ): Promise<any[] | null> {
     const userContent = sentence
       ? `Word: "${word}"\nContext sentence: "${sentence}"`
       : `Word: "${word}"`;
@@ -76,9 +89,15 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
     }
   }
 
-  private async callGemini(_word: string, _sentence: string, _encounterCount: number): Promise<any[] | null> {
+  private async callGemini(
+    _word: string,
+    _sentence: string,
+    _encounterCount: number,
+  ): Promise<any[] | null> {
     // To enable: npm install @google/generative-ai in lexify-api, set GEMINI_API_KEY env var,
     // then replace this stub with the Gemini SDK call using the same response format as callClaude.
-    throw new Error('Gemini provider not yet configured. Switch aiProvider back to "claude" in admin settings.');
+    throw new Error(
+      'Gemini provider not yet configured. Switch aiProvider back to "claude" in admin settings.',
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
 import * as crypto from 'crypto';
@@ -152,6 +152,20 @@ export class WordHistoryService {
     }).catch(() => {});
 
     return result;
+  }
+
+  async toggleFavourite(userId: string, wordSenseId: string) {
+    const sense = await this.prisma.wordSense.findFirst({
+      where: { id: wordSenseId, userId },
+      select: { isFavourite: true },
+    });
+    if (!sense) throw new NotFoundException('Word not found');
+
+    return this.prisma.wordSense.update({
+      where: { id: wordSenseId },
+      data: { isFavourite: !sense.isFavourite },
+      select: { id: true, isFavourite: true },
+    });
   }
 
   async getHistory(userId: string) {

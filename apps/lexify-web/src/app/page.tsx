@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
-import { BookOpen, LogOut, ExternalLink, Search, Clock, PlayCircle, Download, BarChart3, List, TrendingUp, CalendarDays, Zap, Brain, RotateCcw, ThumbsUp, ThumbsDown, ChevronDown, CreditCard } from "lucide-react";
+import { BookOpen, LogOut, ExternalLink, Search, Clock, PlayCircle, Download, BarChart3, List, TrendingUp, CalendarDays, Zap, Heart, ChevronDown, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 interface WordEncounter {
@@ -18,6 +18,7 @@ interface WordSense {
   senseId: string;
   word: string;
   meaning: string;
+  isFavourite: boolean;
   createdAt: string;
   encounters: WordEncounter[];
 }
@@ -172,16 +173,11 @@ export default function Dashboard() {
   const [words, setWords] = useState<WordSense[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'list' | 'analytics' | 'flashcard'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'favourites'>('all');
   const [quota, setQuota] = useState<{ tier: string; remaining: number | null; dailyLimit: number | null } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  // Flashcard state
-  const [cardIndex, setCardIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [sessionQueue, setSessionQueue] = useState<WordSense[]>([]);
-  const [sessionDone, setSessionDone] = useState<string[]>([]); // ids of completed cards
 
   useEffect(() => {
     if (session && (session as any).accessToken) {
@@ -200,17 +196,6 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  useEffect(() => {
-    if (viewMode === 'flashcard' && words.length > 0) {
-      // Shuffle words for a fresh session
-      const shuffled = [...words].sort(() => Math.random() - 0.5);
-      setSessionQueue(shuffled);
-      setCardIndex(0);
-      setFlipped(false);
-      setSessionDone([]);
-    }
-  }, [viewMode]);
 
   const fetchWords = async () => {
     try {
@@ -282,24 +267,18 @@ export default function Dashboard() {
     }
   };
 
-  const handleCardResult = (knew: boolean) => {
-    const current = sessionQueue[cardIndex];
-    if (!knew) {
-      // Put the card back at the end so it repeats
-      setSessionQueue(q => [...q, current]);
-    } else {
-      setSessionDone(d => [...d, current.id]);
+  const toggleFavourite = async (wordId: string) => {
+    const jwt = (session as any).accessToken;
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    setWords(prev => prev.map(w => w.id === wordId ? { ...w, isFavourite: !w.isFavourite } : w));
+    try {
+      await fetch(`${API}/words/${wordId}/favourite`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${jwt}` },
+      });
+    } catch {
+      setWords(prev => prev.map(w => w.id === wordId ? { ...w, isFavourite: !w.isFavourite } : w));
     }
-    setFlipped(false);
-    setCardIndex(i => i + 1);
-  };
-
-  const restartFlashcards = () => {
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
-    setSessionQueue(shuffled);
-    setCardIndex(0);
-    setFlipped(false);
-    setSessionDone([]);
   };
 
   if (status === "loading") {
@@ -314,10 +293,11 @@ export default function Dashboard() {
     return <SignInPage />;
   }
 
-  const filteredWords = words.filter(w => 
-    w.word.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    w.meaning.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredWords = words.filter(w => {
+    if (activeFilter === 'favourites' && !w.isFavourite) return false;
+    return w.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.meaning.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   // --- Analytics Computations ---
   const totalSenses = words.length;
@@ -357,13 +337,6 @@ export default function Dashboard() {
             >
                <BarChart3 size={16} />
                Analytics
-            </button>
-            <button
-               onClick={() => setViewMode('flashcard')}
-               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${viewMode === 'flashcard' ? 'bg-white shadow-sm text-blue-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-               <Brain size={16} />
-               Review
             </button>
           </div>
           
@@ -605,119 +578,26 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Flashcard Review View */}
-        {viewMode === 'flashcard' && (
-          <div className="flex flex-col items-center gap-8 animate-in fade-in zoom-in-95 duration-500 pb-12">
-            {words.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">No words to review yet. Go look some up!</div>
-            ) : cardIndex >= sessionQueue.length ? (
-              /* Session complete screen */
-              <div className="flex flex-col items-center gap-6 py-16">
-                <div className="w-20 h-20 rounded-3xl bg-linear-to-tr from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/20">
-                  <ThumbsUp size={36} className="text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-800">Session Complete!</h2>
-                <p className="text-slate-500 text-center max-w-sm">
-                  You reviewed <span className="font-bold text-slate-700">{sessionDone.length}</span> words.
-                  {sessionDone.length < sessionQueue.filter((_, i) => i < cardIndex).length
-                    ? ' Some cards have been moved to the end of the queue to reinforce them.'
-                    : ' Great work!'}
-                </p>
-                <button
-                  onClick={restartFlashcards}
-                  className="flex items-center gap-2 bg-slate-800 text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-slate-700 transition-colors"
-                >
-                  <RotateCcw size={16} />
-                  Start New Session
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Progress bar */}
-                <div className="w-full max-w-lg">
-                  <div className="flex justify-between text-xs font-semibold text-slate-400 mb-2">
-                    <span>{Math.min(cardIndex + 1, sessionQueue.length)} / {sessionQueue.length}</span>
-                    <span>{sessionDone.length} known</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-linear-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
-                      style={{ width: `${(cardIndex / sessionQueue.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Card */}
-                <div
-                  className="w-full max-w-lg cursor-pointer"
-                  style={{ perspective: '1000px' }}
-                  onClick={() => setFlipped(f => !f)}
-                >
-                  <div
-                    className="relative w-full transition-transform duration-500"
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                      minHeight: '280px',
-                    }}
-                  >
-                    {/* Front */}
-                    <div
-                      className="absolute inset-0 bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-[28px] p-10 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.04)]"
-                      style={{ backfaceVisibility: 'hidden' }}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">Word</p>
-                      <h2 className="text-4xl font-extrabold text-slate-800 capitalize tracking-tight text-center">
-                        {sessionQueue[cardIndex]?.word}
-                      </h2>
-                      <p className="text-slate-400 text-sm mt-6 font-medium">tap to reveal</p>
-                    </div>
-
-                    {/* Back */}
-                    <div
-                      className="absolute inset-0 bg-linear-to-br from-blue-600 to-cyan-500 rounded-[28px] p-10 flex flex-col items-center justify-center shadow-xl shadow-blue-500/20"
-                      style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                    >
-                      <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-4">Definition</p>
-                      <p className="text-white font-semibold text-center text-lg leading-relaxed">
-                        {sessionQueue[cardIndex]?.meaning.split(' • ')[0].replace(/^\[.*?\]\s*/, '')}
-                      </p>
-                      {sessionQueue[cardIndex]?.encounters?.find(e => e.contextSentence) && (
-                        <p className="text-white/60 text-sm italic text-center mt-4">
-                          "{sessionQueue[cardIndex]?.encounters?.find(e => e.contextSentence)?.contextSentence}"
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action buttons — only shown after flip */}
-                {flipped && (
-                  <div className="flex gap-4 animate-in fade-in duration-200">
-                    <button
-                      onClick={() => handleCardResult(false)}
-                      className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-8 py-3.5 rounded-2xl font-bold transition-all active:scale-[0.97]"
-                    >
-                      <ThumbsDown size={18} />
-                      Again
-                    </button>
-                    <button
-                      onClick={() => handleCardResult(true)}
-                      className="flex items-center gap-2 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-8 py-3.5 rounded-2xl font-bold transition-all active:scale-[0.97]"
-                    >
-                      <ThumbsUp size={18} />
-                      Got it
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
         {/* Dictionary Layout View */}
         {viewMode === 'list' && (
            <>
+              {/* Filter tabs */}
+              <div className="mb-6 flex gap-2">
+                <button
+                  onClick={() => setActiveFilter('all')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${activeFilter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
+                >
+                  All words
+                </button>
+                <button
+                  onClick={() => setActiveFilter('favourites')}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${activeFilter === 'favourites' ? 'bg-red-500 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
+                >
+                  <Heart size={13} fill={activeFilter === 'favourites' ? 'currentColor' : 'none'} />
+                  Favourites
+                </button>
+              </div>
+
               {/* Content Area */}
               {loading ? (
                 <div className="flex justify-center items-center h-64">
@@ -747,8 +627,16 @@ export default function Dashboard() {
                               Encountered {word.encounters?.length || 0} times
                            </span>
                         </div>
-                        <div className="bg-blue-50 text-blue-600 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                          <BookOpen size={18} />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleFavourite(word.id); }}
+                            className={`p-2 rounded-xl transition-all ${word.isFavourite ? 'text-red-400 bg-red-50 hover:bg-red-100' : 'opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 hover:bg-red-50'}`}
+                          >
+                            <Heart size={16} fill={word.isFavourite ? 'currentColor' : 'none'} />
+                          </button>
+                          <div className="bg-blue-50 text-blue-600 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                            <BookOpen size={18} />
+                          </div>
                         </div>
                       </div>
                       
@@ -804,9 +692,11 @@ export default function Dashboard() {
                     </div>
                   ))}
                   
-                  {filteredWords.length === 0 && searchQuery && (
+                  {filteredWords.length === 0 && (
                     <div className="col-span-full text-center py-12 text-slate-500 font-medium">
-                      No words matching "{searchQuery}"
+                      {activeFilter === 'favourites'
+                        ? 'No favourites yet — click the heart on any word card to save it here.'
+                        : `No words matching "${searchQuery}"`}
                     </div>
                   )}
                 </div>

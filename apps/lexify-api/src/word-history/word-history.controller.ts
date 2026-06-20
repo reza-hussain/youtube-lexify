@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { WordHistoryService } from './word-history.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -26,5 +26,10 @@ export class WordHistoryController {
       console.error('GET /words ERROR:', e);
       throw e;
     }
+  }
+
+  @Patch(':id/favourite')
+  async toggleFavourite(@Request() req: any, @Param('id') id: string) {
+    return this.wordHistoryService.toggleFavourite(req.user.id, id);
   }
 }
