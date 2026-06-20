@@ -28,6 +28,7 @@ export class AuthService {
     });
 
     this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
+    this.emailService.sendAdminNewUserAlert(user.email, user.name || 'User');
 
     const payload = { email: user.email, sub: user.id };
     return {
@@ -122,8 +123,8 @@ export class AuthService {
                name: tokenInfo.email.split('@')[0], // simplistic fallback
             }
          });
-         // Fire and forget welcome email
          this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
+         this.emailService.sendAdminNewUserAlert(user.email, user.name || 'User');
        }
 
        const payload = { email: user.email, sub: user.id };
@@ -165,8 +166,8 @@ export class AuthService {
                name: payloadToken.name || payloadToken.email.split('@')[0],
             }
          });
-         // Fire and forget welcome email
          this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
+         this.emailService.sendAdminNewUserAlert(user.email, user.name || 'User');
        }
 
        const payload = { email: user.email, sub: user.id };
