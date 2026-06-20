@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role, User } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { ROLES_KEY } from './roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,9 +24,9 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User is not authenticated properly');
     }
 
-    // Always fetch the freshest role from DB just to be safe
     const user = await this.prisma.user.findUnique({
-      where: { id: jwtUser.id || jwtUser.sub }
+      where: { id: jwtUser.id || jwtUser.sub },
+      select: { id: true, role: true, status: true },
     });
 
     if (!user) {
@@ -37,9 +37,6 @@ export class RolesGuard implements CanActivate {
     if (!hasRole) {
       throw new ForbiddenException(`Require one of these roles: ${requiredRoles.join(', ')}`);
     }
-
-    // Attach fresh user to request for convenience
-    request.userEntity = user;
 
     return true;
   }
