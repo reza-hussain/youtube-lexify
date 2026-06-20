@@ -399,7 +399,7 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
 
              chrome.runtime.sendMessage({
                 type: 'SAVE_WORD',
-                payload: { word, meaning: meaningString, videoUrl: window.location.href, timestamp, contextSentence: sentence }
+                payload: { word, meaning: meaningString, videoUrl: window.location.href, timestamp, contextSentence: sentence, source: response.source ?? 'dictionary' }
              }, () => {});
 
           } else {

@@ -14,8 +14,8 @@ export class WordHistoryController {
 
   @Post('save')
   async saveWord(@Request() req: any, @Body() body: any) {
-    const { word, meaning, videoUrl, timestamp, contextSentence } = body;
-    return this.wordHistoryService.saveWord(req.user.id, word, meaning, videoUrl, timestamp, contextSentence);
+    const { word, meaning, videoUrl, timestamp, contextSentence, source } = body;
+    return this.wordHistoryService.saveWord(req.user.id, word, meaning, videoUrl, timestamp, contextSentence, source);
   }
 
   @Get()

@@ -134,8 +134,8 @@ chrome.runtime.onMessage.addListener(
             }
 
             if (res.ok) {
-              const { definition, remaining } = await res.json();
-              sendResponse({ definition, status: 'success', remaining });
+              const { definition, remaining, source } = await res.json();
+              sendResponse({ definition, status: 'success', remaining, source });
               return;
             }
           } catch (err) {

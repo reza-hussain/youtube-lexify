@@ -18,6 +18,7 @@ interface WordSense {
   senseId: string;
   word: string;
   meaning: string;
+  source: string;
   isFavourite: boolean;
   createdAt: string;
   encounters: WordEncounter[];
@@ -623,9 +624,16 @@ export default function Dashboard() {
                       <div className="flex justify-between items-start mb-4">
                         <div>
                            <h3 className="text-xl font-bold text-slate-800 capitalize tracking-tight">{word.word}</h3>
-                           <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-1 inline-block">
-                              Encountered {word.encounters?.length || 0} times
-                           </span>
+                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                             <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full inline-block">
+                               Encountered {word.encounters?.length || 0} times
+                             </span>
+                             {word.source === 'ai' ? (
+                               <span className="text-xs font-semibold bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full inline-block">✦ AI</span>
+                             ) : (
+                               <span className="text-xs font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full inline-block">Dictionary</span>
+                             )}
+                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <button

@@ -63,6 +63,7 @@ model WordSense {
   word        String
   meaning     String
   language    String   @default("en")
+  source      String   @default("dictionary") // "ai" or "dictionary"
   isFavourite Boolean  @default(false)
   createdAt   DateTime @default(now())
 

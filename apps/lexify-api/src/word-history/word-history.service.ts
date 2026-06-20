@@ -118,15 +118,15 @@ export class WordHistoryService {
     return 'other';
   }
 
-  async saveWord(userId: string, word: string, meaning: string, videoUrl: string, timestamp: string, contextSentence?: string) {
+  async saveWord(userId: string, word: string, meaning: string, videoUrl: string, timestamp: string, contextSentence?: string, source: string = 'dictionary') {
     const rawSenseString = `${word.toLowerCase().trim()}|${meaning.toLowerCase().trim()}`;
     const senseId = crypto.createHash('sha256').update(rawSenseString).digest('hex');
 
     const result = await this.prisma.$transaction(async (tx) => {
       const sense = await tx.wordSense.upsert({
         where: { userId_senseId: { userId, senseId } },
-        update: {},
-        create: { userId, senseId, word: word.trim(), meaning: meaning.trim() },
+        update: { source },
+        create: { userId, senseId, word: word.trim(), meaning: meaning.trim(), source },
       });
 
       let encounter = await tx.wordEncounter.findFirst({
