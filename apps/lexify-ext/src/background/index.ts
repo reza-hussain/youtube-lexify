@@ -118,6 +118,8 @@ chrome.runtime.onMessage.addListener(
         const jwt = await getSilentJwt();
         if (jwt) {
           try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
             const res = await fetch(`${API_URL}/words/define`, {
               method: 'POST',
               headers: {
@@ -125,7 +127,9 @@ chrome.runtime.onMessage.addListener(
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ word, sentence }),
+              signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
             if (res.status === 403) {
               const body = await res.json();

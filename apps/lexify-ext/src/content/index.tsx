@@ -336,7 +336,13 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
     const sentence = captionSegment?.textContent?.trim() || '';
     dispatchDefinitionEvent('LOADING', null, word);
 
+    // Safety net: if background never responds (e.g. service worker cold-start), clear loading after 12s
+    const fallbackTimer = setTimeout(() => {
+      dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Could not fetch definition. Please try again.' });
+    }, 12000);
+
     chrome.runtime.sendMessage({ type: 'FETCH_DEFINITION', word, sentence }, (response) => {
+       clearTimeout(fallbackTimer);
        if (chrome.runtime.lastError) {
           console.error('[Lexify] SendMessage Error:', chrome.runtime.lastError);
           dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Connection error with extension background.' });
