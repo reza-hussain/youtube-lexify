@@ -311,6 +311,56 @@ export class SubscriptionService {
     return { ok: true };
   }
 
+  /** Handle incoming Razorpay webhook events (subscription lifecycle). */
+  async handleRazorpayWebhook(rawBody: Buffer, signature: string) {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) throw new BadRequestException('Razorpay webhook secret not configured');
+
+    const expected = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('hex');
+
+    if (expected !== signature) {
+      throw new BadRequestException('Invalid Razorpay webhook signature');
+    }
+
+    const event = JSON.parse(rawBody.toString());
+    const sub = event?.payload?.subscription?.entity;
+    if (!sub?.id) return { received: true };
+
+    const subscriptionId: string = sub.id;
+
+    switch (event.event) {
+      case 'subscription.charged': {
+        // Successful renewal — ensure user stays PRO
+        await this.prisma.user.updateMany({
+          where: { razorpaySubscriptionId: subscriptionId },
+          data: { subscriptionTier: 'PRO', subscriptionStatus: 'ACTIVE' },
+        });
+        break;
+      }
+      case 'subscription.cancelled':
+      case 'subscription.completed': {
+        await this.prisma.user.updateMany({
+          where: { razorpaySubscriptionId: subscriptionId },
+          data: { subscriptionTier: 'FREE', subscriptionStatus: 'CANCELED' },
+        });
+        break;
+      }
+      case 'subscription.halted': {
+        // 3 consecutive payment failures — downgrade but keep status so UI can show a warning
+        await this.prisma.user.updateMany({
+          where: { razorpaySubscriptionId: subscriptionId },
+          data: { subscriptionTier: 'FREE', subscriptionStatus: 'PAST_DUE' },
+        });
+        break;
+      }
+    }
+
+    return { received: true };
+  }
+
   /** Handle incoming Stripe webhook events. */
   async handleWebhook(rawBody: Buffer, signature: string) {
     const secret = process.env.STRIPE_WEBHOOK_SECRET;

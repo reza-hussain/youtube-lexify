@@ -97,4 +97,14 @@ export class SubscriptionController {
   ) {
     return this.subscriptionService.handleWebhook(req.rawBody!, sig);
   }
+
+  /** POST /subscription/razorpay-webhook — Razorpay webhook (no auth, raw body required) */
+  @Post('razorpay-webhook')
+  @HttpCode(200)
+  async razorpayWebhook(
+    @Req() req: any,
+    @Headers('x-razorpay-signature') sig: string,
+  ) {
+    return this.subscriptionService.handleRazorpayWebhook(req.rawBody!, sig);
+  }
 }
