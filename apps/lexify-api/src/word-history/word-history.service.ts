@@ -59,8 +59,11 @@ export class WordHistoryService {
     const cleanWord = word.toLowerCase().replace(/[^a-z]/g, '');
     const remaining = limit === Infinity ? null : limit - user.dailyLookupCount - 1;
 
+    const hasAiKey = !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY);
+    console.log(`[WordHistory] defineWord: word=${cleanWord} isPro=${isPro} hasAiKey=${hasAiKey} aiCount=${user.dailyAiLookupCount}`);
+
     // PRO: context-aware AI definitions (up to 200/day)
-    if (isPro && process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY) {
+    if (isPro && hasAiKey) {
       if (user.dailyAiLookupCount < AI_DAILY_LIMIT) {
         const encounterCount = await this.prisma.wordEncounter.count({
           where: { wordSense: { userId, word: cleanWord } },
@@ -94,7 +97,7 @@ export class WordHistoryService {
     }
 
     // Dictionary 404 for PRO: try AI as last resort (e.g. proper nouns, slang)
-    if (isPro && process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY) {
+    if (isPro && hasAiKey) {
       try {
         const aiDef = await this.aiService.getDefinition(cleanWord, sentence ?? '', 0);
         if (aiDef) {
