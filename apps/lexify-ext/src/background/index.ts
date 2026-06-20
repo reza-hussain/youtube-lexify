@@ -1,9 +1,8 @@
 const DICTIONARY_API_URL = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// Cache TTL: 24 hours in milliseconds
+// Cache TTL: 24 hours (only used for guest / dictionary responses)
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-// Free unauthenticated limit per day (client-side only for guests)
 const GUEST_DAILY_LIMIT = 30;
 
 interface CacheEntry {
@@ -33,7 +32,6 @@ async function setCache(word: string, data: any): Promise<void> {
   });
 }
 
-/** Get cached Lexify JWT. Returns null if missing or expired. */
 async function getCachedJwt(): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt'], (result) => {
@@ -46,7 +44,6 @@ async function getCachedJwt(): Promise<string | null> {
   });
 }
 
-/** Exchange Chrome OAuth token for a Lexify JWT and cache it for 25 days. */
 async function exchangeAndCacheJwt(chromeToken: string): Promise<string> {
   const res = await fetch(`${API_URL}/auth/chrome`, {
     method: 'POST',
@@ -55,7 +52,6 @@ async function exchangeAndCacheJwt(chromeToken: string): Promise<string> {
   });
   if (!res.ok) throw new Error('Auth exchange failed');
   const { access_token } = await res.json();
-  // JWT is valid for 30d; cache for 25d to stay safe
   const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
   await new Promise<void>((resolve) => {
     chrome.storage.local.set({ lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt }, resolve);
@@ -63,13 +59,10 @@ async function exchangeAndCacheJwt(chromeToken: string): Promise<string> {
   return access_token;
 }
 
-/** Get a valid Lexify JWT silently (no popup). Returns null if not logged in. */
 async function getSilentJwt(): Promise<string | null> {
-  // 1. Try cached JWT first (avoids two round-trips on every lookup)
   const cached = await getCachedJwt();
   if (cached) return cached;
 
-  // 2. Try getting a Chrome token silently
   return new Promise((resolve) => {
     chrome.identity.getAuthToken({ interactive: false }, async (token) => {
       if (chrome.runtime.lastError || !token) {
@@ -86,7 +79,6 @@ async function getSilentJwt(): Promise<string | null> {
   });
 }
 
-/** Check guest daily usage, returns true if allowed (and increments count). */
 async function checkGuestQuota(): Promise<boolean> {
   return new Promise((resolve) => {
     chrome.storage.local.get(['guestLookupCount', 'guestLookupDate'], (result) => {
@@ -118,26 +110,24 @@ chrome.runtime.onMessage.addListener(
     // ── FETCH_DEFINITION ───────────────────────────────────────────────────
     if (request.type === 'FETCH_DEFINITION') {
       const word = request.word.toLowerCase().replace(/[^a-z]/g, '');
-      console.log('[Lexify Background] Fetching definition for:', word);
+      const sentence: string = request.sentence || '';
 
       (async () => {
-        // 1. Return from persistent cache if fresh
-        const cached = await getCached(word);
-        if (cached) {
-          sendResponse({ definition: cached, status: 'success' });
-          return;
-        }
-
-        // 2. Try authenticated path (backend proxy — enforces server-side quota)
+        // Authenticated path — POST with word + sentence for context-aware AI definitions.
+        // We don't use local cache here because AI responses are sentence-specific.
         const jwt = await getSilentJwt();
         if (jwt) {
           try {
-            const res = await fetch(`${API_URL}/words/define/${encodeURIComponent(word)}`, {
-              headers: { Authorization: `Bearer ${jwt}` },
+            const res = await fetch(`${API_URL}/words/define`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ word, sentence }),
             });
 
             if (res.status === 403) {
-              // Daily quota exceeded for this user
               const body = await res.json();
               sendResponse({ status: 'quota_exceeded', message: body.message });
               return;
@@ -145,7 +135,6 @@ chrome.runtime.onMessage.addListener(
 
             if (res.ok) {
               const { definition, remaining } = await res.json();
-              if (definition) await setCache(word, definition);
               sendResponse({ definition, status: 'success', remaining });
               return;
             }
@@ -154,14 +143,19 @@ chrome.runtime.onMessage.addListener(
           }
         }
 
-        // 3. Unauthenticated guest path — enforce client-side daily limit
+        // Guest path — enforce client-side daily limit, use local cache + direct dictionary API
         const allowed = await checkGuestQuota();
         if (!allowed) {
           sendResponse({ status: 'require_login' });
           return;
         }
 
-        // 4. Direct dictionary API fetch for guests
+        const cached = await getCached(word);
+        if (cached) {
+          sendResponse({ definition: cached, status: 'success' });
+          return;
+        }
+
         try {
           const response = await fetch(`${DICTIONARY_API_URL}${word}`);
           if (!response.ok) {
@@ -181,20 +175,18 @@ chrome.runtime.onMessage.addListener(
         }
       })();
 
-      return true; // async
+      return true;
     }
 
     // ── INITIATE_LOGIN ─────────────────────────────────────────────────────
     if (request.type === 'INITIATE_LOGIN') {
       chrome.identity.getAuthToken({ interactive: true }, async (token) => {
         if (chrome.runtime.lastError || !token) {
-          console.error('[Lexify Background] Login failed:', chrome.runtime.lastError);
           sendResponse({ status: 'error', error: 'Authentication failed.' });
           return;
         }
         try {
           const jwt = await exchangeAndCacheJwt(token);
-          // Reset guest counter on login
           chrome.storage.local.set({ guestLookupCount: 0 }, () => {
             sendResponse({ status: 'success', token, jwt });
           });
@@ -207,7 +199,6 @@ chrome.runtime.onMessage.addListener(
 
     // ── FORCE_LOGOUT ────────────────────────────────────────────────────────
     if (request.type === 'FORCE_LOGOUT') {
-      // Clear cached JWT
       chrome.storage.local.remove(['lexifyJwt', 'lexifyJwtExpiresAt'], () => {
         chrome.identity.getAuthToken({ interactive: false }, (tokenResult: any) => {
           const token =
@@ -222,7 +213,6 @@ chrome.runtime.onMessage.addListener(
             .then(() => {
               chrome.identity.removeCachedAuthToken({ token }, () => {
                 chrome.identity.clearAllCachedAuthTokens(() => {
-                  console.log('[Lexify Background] Successfully logged out.');
                   sendResponse({ status: 'success' });
                 });
               });
@@ -244,8 +234,6 @@ chrome.runtime.onMessage.addListener(
 
     // ── SAVE_WORD ───────────────────────────────────────────────────────────
     if (request.type === 'SAVE_WORD') {
-      console.log('[Lexify Background] Saving word to history:', request.payload);
-
       (async () => {
         const jwt = await getSilentJwt();
         if (!jwt) {
@@ -265,7 +253,6 @@ chrome.runtime.onMessage.addListener(
 
           const body = await saveRes.json();
           if (!saveRes.ok) throw new Error(body.message || `HTTP ${saveRes.status}`);
-          console.log('[Lexify Background] Synced word to cloud:', body);
           sendResponse({ status: 'success', data: body });
         } catch (error) {
           console.error('[Lexify Background] Error syncing word:', error);

@@ -1,0 +1,13 @@
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "dailyAiLookupCount" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "dailyAiLookupResetAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+CREATE TABLE IF NOT EXISTS "AppSetting" (
+    "key" TEXT NOT NULL,
+    "value" TEXT NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "AppSetting_pkey" PRIMARY KEY ("key")
+);
+
+INSERT INTO "AppSetting" ("key", "value", "updatedAt")
+VALUES ('aiProvider', 'claude', NOW())
+ON CONFLICT ("key") DO NOTHING;

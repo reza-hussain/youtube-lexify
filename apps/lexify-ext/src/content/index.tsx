@@ -35,7 +35,7 @@ const CloseIcon = () => (
 
 // Tooltip component matching Brand Guidelines (Liquid Glass)
 const LexifyOverlay = () => {
-  const [definitionData, setDefinitionData] = useState<{ word: string, meaning: string, meanings?: {partOfSpeech: string, definition: string}[], phoneticText?: string, audioUrl?: string } | null>(null);
+  const [definitionData, setDefinitionData] = useState<{ word: string, meaning: string, meanings?: {partOfSpeech: string, definition: string}[], phoneticText?: string, audioUrl?: string, etymology?: string, tip?: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [requireLogin, setRequireLogin] = useState(false);
   const [isPersistent, setIsPersistent] = useState(false);
@@ -173,6 +173,20 @@ const LexifyOverlay = () => {
                         {definitionData?.meaning || "Definition not found."}
                       </p>
                    )}
+
+                   {isPersistent && definitionData?.etymology && (
+                      <div className="mt-3 pt-3 border-t border-slate-200/60">
+                         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Etymology</p>
+                         <p className="text-[13px] text-slate-600 leading-relaxed italic">{definitionData.etymology}</p>
+                      </div>
+                   )}
+
+                   {isPersistent && definitionData?.tip && (
+                      <div className="mt-2 p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+                         <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Memory Tip</p>
+                         <p className="text-[13px] text-blue-700 leading-relaxed">{definitionData.tip}</p>
+                      </div>
+                   )}
                 </div>
               </div>
             )}
@@ -271,11 +285,10 @@ const tokenizeCaptionSegment = (segment: HTMLElement) => {
 };
 
 const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
-    console.log('[Lexify] Dispatching LOADING for:', word);
+    const sentence = captionSegment?.textContent?.trim() || '';
     dispatchDefinitionEvent('LOADING', null, word);
-    
-    console.log('[Lexify] Sending fetch message to background for:', word);
-    chrome.runtime.sendMessage({ type: 'FETCH_DEFINITION', word }, (response) => {
+
+    chrome.runtime.sendMessage({ type: 'FETCH_DEFINITION', word, sentence }, (response) => {
        if (chrome.runtime.lastError) {
           console.error('[Lexify] SendMessage Error:', chrome.runtime.lastError);
           dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Connection error with extension background.' });
@@ -293,13 +306,17 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
           let meaningString = '';
           let phoneticText = '';
           let audioUrl = '';
+          let etymology = '';
+          let tip = '';
           let meaningsList: {partOfSpeech: string, definition: string}[] = [];
-          
+
           if (Array.isArray(data) && data.length > 0) {
               const exactMatch = data.find(entry => entry.word?.toLowerCase() === word.toLowerCase()) || data[0];
               const meanings = exactMatch?.meanings || [];
               const phonetics = exactMatch?.phonetics || [];
-              
+              etymology = exactMatch?.etymology || '';
+              tip = exactMatch?.tip || '';
+
               for (const p of phonetics) {
                 if (p.text && !phoneticText) phoneticText = p.text;
                 if (p.audio && !audioUrl) audioUrl = p.audio;
@@ -307,7 +324,7 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
               if (!phoneticText && exactMatch?.phonetic) {
                   phoneticText = exactMatch.phonetic;
               }
-              
+
               const uniquePoS = new Set();
               for (const m of meanings) {
                  if (m.definitions && m.definitions.length > 0 && !uniquePoS.has(m.partOfSpeech)) {
@@ -317,26 +334,24 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
                         definition: m.definitions[0].definition
                     });
                  }
-                 if (meaningsList.length >= 4) break; 
+                 if (meaningsList.length >= 4) break;
               }
               meaningString = meaningsList.map(m => `[${m.partOfSpeech}] ${m.definition}`).join(' • ');
           }
 
           if (meaningsList.length > 0) {
-             dispatchDefinitionEvent('SUCCESS', { word, meaning: meaningString, meanings: meaningsList, phoneticText, audioUrl });
-             
+             dispatchDefinitionEvent('SUCCESS', { word, meaning: meaningString, meanings: meaningsList, phoneticText, audioUrl, etymology, tip });
+
              let timestamp = '0:00';
              if (currentVideo) {
                const minutes = Math.floor(currentVideo.currentTime / 60);
                const seconds = Math.floor(currentVideo.currentTime % 60).toString().padStart(2, '0');
                timestamp = `${minutes}:${seconds}`;
              }
-             
-             let contextSentence = captionSegment?.textContent?.trim() || '';
 
              chrome.runtime.sendMessage({
                 type: 'SAVE_WORD',
-                payload: { word, meaning: meaningString, videoUrl: window.location.href, timestamp, contextSentence }
+                payload: { word, meaning: meaningString, videoUrl: window.location.href, timestamp, contextSentence: sentence }
              }, () => {});
 
           } else {

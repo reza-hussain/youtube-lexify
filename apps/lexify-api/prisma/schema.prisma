@@ -42,8 +42,10 @@ model User {
   razorpaySubscriptionId String? @unique
 
   // Quota tracking (resets daily)
-  dailyLookupCount    Int      @default(0)
-  dailyLookupResetAt  DateTime @default(now())
+  dailyLookupCount     Int      @default(0)
+  dailyLookupResetAt   DateTime @default(now())
+  dailyAiLookupCount   Int      @default(0)
+  dailyAiLookupResetAt DateTime @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,6 +140,12 @@ model SystemLog {
   createdAt   DateTime @default(now())
 
   @@index([level, createdAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model RevenueEvent {

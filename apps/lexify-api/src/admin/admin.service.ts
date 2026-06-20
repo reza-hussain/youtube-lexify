@@ -99,6 +99,18 @@ export class AdminService {
     });
   }
 
+  async getAppSettings() {
+    return this.prisma.appSetting.findMany();
+  }
+
+  async updateAppSetting(key: string, value: string) {
+    return this.prisma.appSetting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+  }
+
   async getWordAnalytics() {
     // Top logged words/senses
     const topWords = await this.prisma.wordSense.groupBy({

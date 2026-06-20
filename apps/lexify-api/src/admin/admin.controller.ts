@@ -40,6 +40,16 @@ export class AdminController {
     return this.adminService.toggleFeatureFlag(body.key, body.isEnabled);
   }
 
+  @Get('app-settings')
+  getAppSettings() {
+    return this.adminService.getAppSettings();
+  }
+
+  @Patch('app-settings')
+  updateAppSetting(@Body() body: { key: string; value: string }) {
+    return this.adminService.updateAppSetting(body.key, body.value);
+  }
+
   @Get('words')
   getWordAnalytics() {
     return this.adminService.getWordAnalytics();

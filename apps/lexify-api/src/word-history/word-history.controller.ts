@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { WordHistoryService } from './word-history.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -7,25 +7,23 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class WordHistoryController {
   constructor(private readonly wordHistoryService: WordHistoryService) {}
 
-  @Post('save')
-  async saveWord(@Request() req: any, @Body() body: any) {
-    const userId = req.user.id;
-    const { word, meaning, videoUrl, timestamp, contextSentence } = body;
-    return this.wordHistoryService.saveWord(userId, word, meaning, videoUrl, timestamp, contextSentence);
+  @Post('define')
+  async defineWord(@Request() req: any, @Body() body: { word: string; sentence?: string }) {
+    return this.wordHistoryService.defineWord(req.user.id, body.word, body.sentence);
   }
 
-  @Get('define/:word')
-  async defineWord(@Request() req: any, @Param('word') word: string) {
-    return this.wordHistoryService.defineWord(req.user.id, word);
+  @Post('save')
+  async saveWord(@Request() req: any, @Body() body: any) {
+    const { word, meaning, videoUrl, timestamp, contextSentence } = body;
+    return this.wordHistoryService.saveWord(req.user.id, word, meaning, videoUrl, timestamp, contextSentence);
   }
 
   @Get()
   async getHistory(@Request() req: any) {
     try {
-      const words = await this.wordHistoryService.getHistory(req.user.id);
-      return words;
+      return await this.wordHistoryService.getHistory(req.user.id);
     } catch (e) {
-      console.error("GET /words ERROR:", e);
+      console.error('GET /words ERROR:', e);
       throw e;
     }
   }
