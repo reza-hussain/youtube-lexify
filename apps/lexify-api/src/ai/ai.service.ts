@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenAI } from '@google/genai';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PROVIDER_CACHE_TTL_MS = 60_000;
@@ -8,7 +7,6 @@ const PROVIDER_CACHE_TTL_MS = 60_000;
 @Injectable()
 export class AiService {
   private anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  private gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   private providerCache: { value: string; expiresAt: number } | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -85,6 +83,7 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
       });
 
       const text = (message.content[0] as any).text as string;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return JSON.parse(text);
     } catch {
       return null;
@@ -101,16 +100,33 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
       : `Word: "${word}"`;
 
     try {
-      const response = await this.gemini.models.generateContent({
-        model: 'gemini-2.0-flash-lite',
-        contents: userContent,
-        config: {
-          systemInstruction: this.buildSystemPrompt(encounterCount),
-          maxOutputTokens: 400,
+      const apiKey = process.env.GEMINI_API_KEY;
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: this.buildSystemPrompt(encounterCount) }],
+            },
+            contents: [{ parts: [{ text: userContent }] }],
+            generationConfig: { maxOutputTokens: 400 },
+          }),
         },
-      });
+      );
 
-      const text = response.text ?? '';
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[AiService] Gemini HTTP ${res.status}:`, errText);
+        return null;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const data: any = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const text: string =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
       const clean = text.replace(/```json\n?|```/g, '').trim();
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return JSON.parse(clean);
