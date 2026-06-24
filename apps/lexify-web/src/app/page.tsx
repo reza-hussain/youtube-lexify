@@ -1,6 +1,21 @@
 import Link from 'next/link';
 import { BookOpen, Zap, Download, PlayCircle, Brain, Star, ArrowRight, Check } from 'lucide-react';
 
+function ChromeIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      {/* Red segment — top-right */}
+      <path d="M12 2 A10 10 0 0 1 20.66 17 L17.2 15 A6 6 0 0 0 12 6 Z" fill="#EA4335"/>
+      {/* Green segment — bottom */}
+      <path d="M20.66 17 A10 10 0 0 1 3.34 17 L6.8 15 A6 6 0 0 0 17.2 15 Z" fill="#34A853"/>
+      {/* Yellow segment — top-left */}
+      <path d="M3.34 17 A10 10 0 0 1 12 2 L12 6 A6 6 0 0 0 6.8 15 Z" fill="#FBBC05"/>
+      {/* Blue center */}
+      <circle cx="12" cy="12" r="4.5" fill="#4285F4"/>
+    </svg>
+  );
+}
+
 export const metadata = {
   title: 'Youtube Lexify — Grow your vocab as you watch.',
   description:
@@ -66,6 +81,15 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <a
+              href="https://chromewebstore.google.com/detail/youtube-lexify/pbgpnikcmohfebmkjhcafbbngdoaoigk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-800 transition-all"
+            >
+              <ChromeIcon size={14} />
+              Add to Chrome
+            </a>
             <Link
               href="/login"
               className="text-[13px] font-bold text-white bg-linear-to-r from-blue-500 to-cyan-500 px-4 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(77,163,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,163,255,0.5)] hover:scale-[1.03] transition-all"
@@ -121,6 +145,15 @@ export default function LandingPage() {
               Get Started
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
+            <a
+              href="https://chromewebstore.google.com/detail/youtube-lexify/pbgpnikcmohfebmkjhcafbbngdoaoigk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-slate-300 hover:text-white font-medium px-6 py-4 rounded-2xl border border-white/20 hover:border-white/40 hover:bg-white/5 transition-all text-base"
+            >
+              <ChromeIcon size={16} />
+              Add to Chrome
+            </a>
           </div>
 
           {/* Hero visual — YouTube player mockup */}
@@ -371,7 +404,7 @@ export default function LandingPage() {
                 color: 'from-blue-500 to-cyan-400',
                 glow: 'shadow-blue-500/30',
                 title: 'Install the Extension',
-                desc: 'Add Lexify to Chrome in seconds. Sign up for free — no credit card needed.',
+                desc: 'Add Youtube Lexify to Chrome in seconds. Sign up for free — no credit card needed.',
               },
               {
                 step: '02',
