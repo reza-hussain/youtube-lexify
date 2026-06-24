@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { BookOpen, Zap, Download, PlayCircle, Brain, Star, ArrowRight, Check } from 'lucide-react';
+import { BookOpen, Zap, Download, Brain, Star, ArrowRight, Check } from 'lucide-react';
 
 export const metadata = {
-  title: 'Lexify — Understand Every Word. Instantly.',
+  title: 'Lexify — Grow your vocab as you watch.',
   description:
     'AI-powered definitions for every YouTube subtitle word. Hover to define, auto-save vocabulary, and export to Anki.',
 };
@@ -33,26 +33,20 @@ export default function LandingPage() {
             >
               How it works
             </a>
-            <Link
-              href="/pricing"
+            <a
+              href="#pricing"
               className="text-[13px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100/80 px-3.5 py-1.5 rounded-lg transition-all"
             >
               Pricing
-            </Link>
+            </a>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="text-[13px] font-semibold text-slate-600 hover:text-slate-900 px-3.5 py-1.5 rounded-lg hover:bg-slate-100/80 transition-all"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/login"
               className="text-[13px] font-bold text-white bg-linear-to-r from-blue-500 to-cyan-500 px-4 py-1.5 rounded-lg shadow-[0_2px_8px_rgba(77,163,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,163,255,0.5)] hover:scale-[1.03] transition-all"
             >
-              Get started free
+              Get Started
             </Link>
           </div>
         </nav>
@@ -84,9 +78,9 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.08] mb-6 max-w-4xl">
-            Understand Every Word.{' '}
+            Grow your vocab{' '}
             <span className="bg-gradient-to-r from-[#4DA3FF] to-[#38F2FF] bg-clip-text text-transparent">
-              Instantly.
+              as you watch.
             </span>
           </h1>
 
@@ -100,16 +94,9 @@ export default function LandingPage() {
               href="/login"
               className="group flex items-center gap-2 bg-gradient-to-r from-[#4DA3FF] to-[#38F2FF] text-white font-bold px-8 py-4 rounded-2xl shadow-[0_0_40px_rgba(77,163,255,0.3)] hover:shadow-[0_0_60px_rgba(77,163,255,0.5)] hover:scale-[1.02] transition-all text-base"
             >
-              Start for free
+              Get Started
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a
-              href="#how-it-works"
-              className="flex items-center gap-2 text-slate-400 hover:text-white font-semibold px-6 py-4 rounded-2xl border border-white/10 hover:border-white/20 transition-all text-base"
-            >
-              <PlayCircle size={18} />
-              See how it works
-            </a>
           </div>
 
           {/* Hero visual — YouTube player mockup */}
@@ -394,55 +381,77 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing CTA */}
-      <section className="py-28 px-6">
+      {/* Pricing */}
+      <section id="pricing" className="py-28 px-6 bg-[#F7F9FB]">
         <div className="max-w-4xl mx-auto">
-          <div className="relative bg-gradient-to-br from-[#0F172A] to-[#1E293B] rounded-[32px] p-12 text-center overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-10 -right-10 w-60 h-60 bg-blue-500/20 rounded-full blur-[80px]" />
-              <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-cyan-500/15 rounded-full blur-[80px]" />
-            </div>
+          <div className="text-center mb-14">
+            <p className="text-sm font-bold text-blue-500 uppercase tracking-widest mb-3">Pricing</p>
+            <h2 className="text-4xl font-bold text-slate-800 tracking-tight mb-4">Start free. Upgrade when ready.</h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              The free tier lets you define 30 words a day. Upgrade to Pro for unlimited lookups and full vocabulary history.
+            </p>
+          </div>
 
-            <div className="relative">
-              <p className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-4">
-                Pricing
-              </p>
-              <h2 className="text-4xl font-bold text-white tracking-tight mb-4">
-                Start free. Upgrade when ready.
-              </h2>
-              <p className="text-slate-400 text-lg mb-10 max-w-lg mx-auto">
-                The free tier lets you define words every day. Upgrade to Pro for unlimited AI
-                lookups and priority support.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <Link
-                  href="/login"
-                  className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#4DA3FF] to-[#38F2FF] text-white font-bold px-8 py-4 rounded-2xl shadow-[0_0_40px_rgba(77,163,255,0.3)] hover:shadow-[0_0_60px_rgba(77,163,255,0.5)] hover:scale-[1.02] transition-all text-base"
-                >
-                  Get started free
-                  <ArrowRight
-                    size={18}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="flex items-center justify-center gap-2 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-2xl border border-white/10 hover:border-white/20 transition-all text-base"
-                >
-                  View pricing
-                </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Free */}
+            <div className="bg-white border border-slate-200/60 rounded-[28px] p-8 flex flex-col shadow-sm">
+              <h3 className="text-xl font-bold text-slate-800 mb-1">Free</h3>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-extrabold text-slate-800">$0</span>
+                <span className="text-slate-400 font-medium">forever</span>
               </div>
-
-              <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-400">
-                {['Free to install', 'No credit card required', 'Cancel anytime'].map((item) => (
-                  <div key={item} className="flex items-center gap-1.5">
-                    <Check size={14} className="text-cyan-400" />
-                    {item}
-                  </div>
+              <ul className="flex flex-col gap-3 flex-1 mb-8">
+                {['30 lookups/day', 'Last 50 words in history', 'Standard dictionary definitions', 'Basic dashboard'].map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-slate-600 text-sm font-medium">
+                    <Check size={15} className="text-slate-400 shrink-0" />
+                    {f}
+                  </li>
                 ))}
-              </div>
+              </ul>
+              <Link
+                href="/login"
+                className="w-full py-3 px-6 rounded-xl font-bold text-sm text-center text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                Get Started
+              </Link>
             </div>
+
+            {/* Pro */}
+            <div className="relative bg-gradient-to-br from-blue-600 to-cyan-500 rounded-[28px] p-8 flex flex-col shadow-xl shadow-blue-500/20 overflow-hidden">
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+              <div className="relative flex items-center justify-between mb-1">
+                <h3 className="text-xl font-bold text-white">Pro</h3>
+                <span className="bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider uppercase">Best Value</span>
+              </div>
+              <div className="relative flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-extrabold text-white">$5</span>
+                <span className="text-white/70 font-medium">/month</span>
+              </div>
+              <ul className="relative flex flex-col gap-3 flex-1 mb-8">
+                {['Unlimited word lookups', 'Full vocabulary history', 'Spaced repetition flashcards', 'Export to CSV & Anki'].map((f) => (
+                  <li key={f} className="flex items-center gap-3 text-white text-sm font-medium">
+                    <Check size={15} className="text-white/80 shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/pricing"
+                className="relative w-full py-3 px-6 rounded-xl font-bold text-sm text-center bg-white text-blue-600 hover:bg-white/90 transition-all active:scale-[0.98]"
+              >
+                Upgrade to Pro
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-400 mt-10">
+            {['Free to install', 'No credit card required', 'Cancel anytime'].map((item) => (
+              <div key={item} className="flex items-center gap-1.5">
+                <Check size={14} className="text-cyan-500" />
+                {item}
+              </div>
+            ))}
           </div>
         </div>
       </section>

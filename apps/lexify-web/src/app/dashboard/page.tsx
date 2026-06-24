@@ -350,7 +350,7 @@ export default function Dashboard() {
               <button
                 onClick={requestBetaAccess}
                 disabled={betaLoading}
-                className="text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                className="text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-xl transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
               >
                 {betaLoading ? 'Requesting...' : 'Request free access'}
               </button>
