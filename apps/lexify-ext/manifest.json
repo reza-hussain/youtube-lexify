@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Lexify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Understand Every Word. Instantly.",
   "action": {
     "default_popup": "index.html"
@@ -22,7 +22,8 @@
     {
       "matches": [
         "http://localhost:3001/*",
-        "https://lexify.app/*"
+        "https://lexify.app/*",
+        "https://youtube-lexify.vercel.app/*"
       ],
       "js": [
         "src/content/dashboard.ts"

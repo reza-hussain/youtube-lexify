@@ -47,10 +47,14 @@ model User {
   dailyAiLookupCount   Int      @default(0)
   dailyAiLookupResetAt DateTime @default(now())
 
+  // Beta access
+  betaProExpiresAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   wordSenses     WordSense[]
+  betaRequest    BetaRequest?
   preference     Preference?
   platformUsage  PlatformUsage[]
   sessions       Session[]
@@ -148,6 +152,17 @@ model AppSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model BetaRequest {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  source      String?   // e.g. "reddit"
+  requestedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RevenueEvent {

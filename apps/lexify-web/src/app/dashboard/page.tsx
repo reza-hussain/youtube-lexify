@@ -55,6 +55,8 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
   const [activeFilter, setActiveFilter] = useState<'all' | 'favourites'>('all');
   const [quota, setQuota] = useState<{ tier: string; remaining: number | null; dailyLimit: number | null } | null>(null);
+  const [betaStatus, setBetaStatus] = useState<{ status: string; slotsRemaining: number } | null>(null);
+  const [betaLoading, setBetaLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -87,9 +89,10 @@ export default function Dashboard() {
       const jwt = (session as any).accessToken;
       const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-      const [wordsRes, quotaRes] = await Promise.all([
+      const [wordsRes, quotaRes, betaRes] = await Promise.all([
         fetch(`${API}/words`, { headers: { Authorization: `Bearer ${jwt}` } }),
         fetch(`${API}/subscription/status`, { headers: { Authorization: `Bearer ${jwt}` } }),
+        fetch(`${API}/beta/status`, { headers: { Authorization: `Bearer ${jwt}` } }),
       ]);
 
       if (!wordsRes.ok) {
@@ -97,14 +100,34 @@ export default function Dashboard() {
         throw new Error("Failed to fetch words from API");
       }
 
-      const [data, quotaData] = await Promise.all([wordsRes.json(), quotaRes.ok ? quotaRes.json() : null]);
+      const [data, quotaData, betaData] = await Promise.all([wordsRes.json(), quotaRes.ok ? quotaRes.json() : null, betaRes.ok ? betaRes.json() : null]);
       setWords(data);
       if (quotaData) setQuota(quotaData);
+      if (betaData) setBetaStatus({ status: betaData.request?.status ?? 'NONE', slotsRemaining: betaData.slotsRemaining });
     } catch (error) {
       console.error("Error fetching words:", error);
       setWords([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const requestBetaAccess = async () => {
+    const jwt = (session as any)?.accessToken;
+    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    setBetaLoading(true);
+    try {
+      const source = new URLSearchParams(window.location.search).get('ref') ?? 'unknown';
+      const res = await fetch(`${API}/beta/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({ source }),
+      });
+      if (res.ok) {
+        setBetaStatus(prev => ({ slotsRemaining: (prev?.slotsRemaining ?? 1) - 1, status: 'PENDING' }));
+      }
+    } catch { /* ignore */ } finally {
+      setBetaLoading(false);
     }
   };
 
@@ -284,7 +307,7 @@ export default function Dashboard() {
         </header>
 
         {quota && quota.tier === 'FREE' && quota.dailyLimit !== null && (
-          <div className="mb-6 flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/60 rounded-2xl px-6 py-4">
+          <div className="mb-4 flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/60 rounded-2xl px-6 py-4">
             <div className="flex items-center gap-3">
               <Zap size={18} className="text-blue-500" />
               <span className="text-sm font-medium text-slate-700">
@@ -297,6 +320,41 @@ export default function Dashboard() {
             >
               Upgrade for unlimited <Zap size={13} />
             </Link>
+          </div>
+        )}
+
+        {/* Beta access banner — only for FREE users who haven't been approved yet */}
+        {quota?.tier === 'FREE' && betaStatus && betaStatus.status !== 'APPROVED' && (
+          <div className="mb-6 flex items-center justify-between bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200/60 rounded-2xl px-6 py-4">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">🎁</span>
+              <div>
+                {betaStatus.status === 'NONE' && (
+                  <p className="text-sm font-medium text-slate-700">
+                    <span className="font-bold text-violet-700">{betaStatus.slotsRemaining} spots left</span> — Request 1 month of free Pro access
+                  </p>
+                )}
+                {betaStatus.status === 'PENDING' && (
+                  <p className="text-sm font-medium text-slate-700">
+                    Your beta access request is <span className="font-bold text-amber-600">under review</span>. We&apos;ll email you soon!
+                  </p>
+                )}
+                {betaStatus.status === 'REJECTED' && (
+                  <p className="text-sm font-medium text-slate-700">
+                    Beta slots are full. <Link href="/pricing" className="text-violet-600 font-bold hover:underline">Upgrade to Pro →</Link>
+                  </p>
+                )}
+              </div>
+            </div>
+            {betaStatus.status === 'NONE' && betaStatus.slotsRemaining > 0 && (
+              <button
+                onClick={requestBetaAccess}
+                disabled={betaLoading}
+                className="text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 px-4 py-2 rounded-xl transition-colors disabled:opacity-50 shrink-0"
+              >
+                {betaLoading ? 'Requesting...' : 'Request free access'}
+              </button>
+            )}
           </div>
         )}
 

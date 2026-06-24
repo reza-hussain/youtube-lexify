@@ -96,8 +96,21 @@ export class SubscriptionService {
         subscriptionStatus: true,
         dailyLookupCount: true,
         dailyLookupResetAt: true,
+        betaProExpiresAt: true,
       },
     });
+
+    // Auto-downgrade expired beta PRO users
+    let tier = user.subscriptionTier;
+    let status = user.subscriptionStatus;
+    if (tier === 'PRO' && user.betaProExpiresAt && user.betaProExpiresAt < new Date()) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { subscriptionTier: 'FREE', subscriptionStatus: 'NONE', betaProExpiresAt: null },
+      });
+      tier = 'FREE';
+      status = 'NONE';
+    }
 
     const today = new Date();
     const resetDate = new Date(user.dailyLookupResetAt);
@@ -107,11 +120,11 @@ export class SubscriptionService {
       today.getUTCDate() !== resetDate.getUTCDate();
 
     const count = isNewDay ? 0 : user.dailyLookupCount;
-    const limit = user.subscriptionTier === 'PRO' ? null : 30;
+    const limit = tier === 'PRO' ? null : 30;
 
     return {
-      tier: user.subscriptionTier,
-      status: user.subscriptionStatus,
+      tier,
+      status,
       dailyLookupCount: count,
       dailyLimit: limit,
       remaining: limit === null ? null : Math.max(0, limit - count),

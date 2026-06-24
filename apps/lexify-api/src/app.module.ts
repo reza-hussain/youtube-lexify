@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { PingModule } from './ping/ping.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { UsersModule } from './users/users.module';
+import { BetaModule } from './beta/beta.module';
 import { LoggingInterceptor } from './common/logging.interceptor';
 
 @Module({
@@ -28,7 +29,7 @@ import { LoggingInterceptor } from './common/logging.interceptor';
     PrismaModule,
     AuthModule,
     WordHistoryModule,
-    PreferenceModule, EmailModule, AdminModule, PingModule, SubscriptionModule, UsersModule
+    PreferenceModule, EmailModule, AdminModule, PingModule, SubscriptionModule, UsersModule, BetaModule
   ],
   controllers: [AppController],
   providers: [
