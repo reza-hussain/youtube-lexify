@@ -166,10 +166,10 @@ export default function PrivacyPage() {
             <p className="text-sm">
               For privacy-related questions or data deletion requests, contact us at{' '}
               <a
-                href="mailto:alirezaa08@gmail.com"
+                href="mailto:hi@youtubelexify.com"
                 className="text-blue-500 hover:text-blue-700 transition-colors"
               >
-                alirezaa08@gmail.com
+                hi@youtubelexify.com
               </a>
             </p>
           </section>

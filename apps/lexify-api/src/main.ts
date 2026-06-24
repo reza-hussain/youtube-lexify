@@ -14,6 +14,7 @@ async function bootstrap() {
     'http://127.0.0.1:3001',
     'http://localhost:3000',
     'https://youtube-lexify.vercel.app',
+    'https://youtubelexify.com',
     'chrome-extension://npbfdllefekhdplbkdigpncggmojpefi',
     ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(u => u.trim()) : []),
   ];

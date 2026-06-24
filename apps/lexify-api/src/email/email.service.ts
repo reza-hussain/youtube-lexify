@@ -17,7 +17,7 @@ export class EmailService {
     if (!adminEmail) return;
     try {
       await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>',
+        from: 'Lexify <hi@youtubelexify.com>',
         to: [adminEmail],
         subject: `New user signed up: ${newUserEmail}`,
         html: `<p>A new user just signed up on Lexify.</p>
@@ -32,7 +32,7 @@ export class EmailService {
   async sendBetaRequestReceived(to: string, name: string) {
     try {
       await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>',
+        from: 'Lexify <hi@youtubelexify.com>',
         to: [to],
         subject: 'Your Lexify beta access request was received!',
         html: `<p>Hi ${name},</p>
@@ -50,10 +50,10 @@ export class EmailService {
     if (!adminEmail) return;
     const adminUrl = process.env.NEXT_PUBLIC_APP_URL
       ? `${process.env.NEXT_PUBLIC_APP_URL}/admin`
-      : 'https://youtube-lexify.vercel.app/admin';
+      : 'https://youtubelexify.com/admin';
     try {
       await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>',
+        from: 'Lexify <hi@youtubelexify.com>',
         to: [adminEmail],
         subject: `Beta access request from ${userEmail}`,
         html: `<p><strong>${userName}</strong> (${userEmail}) requested 1 month of free Lexify Pro access.</p>
@@ -69,13 +69,13 @@ export class EmailService {
     const expiry = expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     try {
       await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>',
+        from: 'Lexify <hi@youtubelexify.com>',
         to: [to],
         subject: '🎉 Your Lexify Pro access has been approved!',
         html: `<p>Hi ${name},</p>
                <p>Great news — your request for free Lexify Pro access has been <strong>approved</strong>!</p>
                <p>Your Pro access is active until <strong>${expiry}</strong>. Enjoy unlimited lookups and all Pro features.</p>
-               <p><a href="https://youtube-lexify.vercel.app/dashboard">Open your dashboard →</a></p>
+               <p><a href="https://youtubelexify.com/dashboard">Open your dashboard →</a></p>
                <p>— The Lexify Team</p>`,
       });
     } catch (err) {
@@ -86,7 +86,7 @@ export class EmailService {
   async sendBetaRejected(to: string, name: string) {
     try {
       await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>',
+        from: 'Lexify <hi@youtubelexify.com>',
         to: [to],
         subject: 'Update on your Lexify beta access request',
         html: `<p>Hi ${name},</p>
@@ -109,7 +109,7 @@ export class EmailService {
       );
 
       const data = await this.resend.emails.send({
-        from: 'Lexify <onboarding@resend.dev>', // Update when verifying domains
+        from: 'Lexify <hi@youtubelexify.com>', // Update when verifying domains
         to: [to],
         subject: 'Welcome to YouTube Lexify!',
         html: emailHtml,
