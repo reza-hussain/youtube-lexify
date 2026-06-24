@@ -266,7 +266,7 @@ export class SubscriptionService {
     try {
       subscription = await this.razorpay.subscriptions.create({
         plan_id: planId,
-        total_count: isAnnual ? 10 : 120,
+        total_count: isAnnual ? 10 : 100,
         quantity: 1,
         customer_notify: 1,
       });
