@@ -2,9 +2,33 @@ import Link from 'next/link';
 import { BookOpen, Zap, Download, PlayCircle, Brain, Star, ArrowRight, Check } from 'lucide-react';
 
 export const metadata = {
-  title: 'Lexify — Grow your vocab as you watch.',
+  title: 'Youtube Lexify — Grow your vocab as you watch.',
   description:
-    'AI-powered definitions for every YouTube subtitle word. Hover to define, auto-save vocabulary, and export to Anki.',
+    'Youtube Lexify is an AI-powered Chrome extension that gives you instant definitions for any word in YouTube subtitles. Hover to define, auto-save vocabulary, and export to Anki.',
+  keywords: [
+    'Youtube Lexify',
+    'YouTube vocabulary',
+    'YouTube subtitle dictionary',
+    'learn words from YouTube',
+    'Chrome extension vocabulary',
+    'AI word definitions',
+    'language learning YouTube',
+  ],
+  openGraph: {
+    title: 'Youtube Lexify — Grow your vocab as you watch.',
+    description: 'Hover any word in YouTube subtitles for an instant AI-powered definition. Build vocabulary while you watch.',
+    url: 'https://youtubelexify.com',
+    siteName: 'Youtube Lexify',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Youtube Lexify — Grow your vocab as you watch.',
+    description: 'Hover any word in YouTube subtitles for an instant AI-powered definition.',
+  },
+  alternates: {
+    canonical: 'https://youtubelexify.com',
+  },
 };
 
 export default function LandingPage() {
@@ -17,7 +41,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-[10px] bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shadow-blue-500/30">
               <span className="text-white text-sm font-bold tracking-tight">L</span>
             </div>
-            <span className="text-slate-800 font-bold text-[15px] tracking-tight">Lexify</span>
+            <span className="text-slate-800 font-bold text-[15px] tracking-tight">Youtube Lexify</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -463,11 +487,11 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center">
               <span className="text-white text-sm font-bold">L</span>
             </div>
-            <span className="text-slate-700 font-bold">Lexify</span>
+            <span className="text-slate-700 font-bold">Youtube Lexify</span>
           </Link>
 
           <p className="text-sm text-slate-400">
-            © {new Date().getFullYear()} Lexify. Built for curious minds.
+            © {new Date().getFullYear()} Youtube Lexify. Built for curious minds.
           </p>
 
           <div className="flex items-center gap-6">

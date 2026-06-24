@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Lexify Dashboard",
-  description: "Your personalized YouTube dictionary history.",
+  title: "Youtube Lexify",
+  description: "Grow your vocab as you watch. AI-powered definitions for every YouTube subtitle word.",
 };
 
 export default function RootLayout({

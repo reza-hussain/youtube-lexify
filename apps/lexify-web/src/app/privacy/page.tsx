@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Privacy Policy — Lexify',
-  description: 'Privacy policy for the Lexify Chrome extension and web dashboard.',
+  title: 'Privacy Policy — Youtube Lexify',
+  description: 'Privacy policy for the Youtube Lexify Chrome extension and web dashboard.',
 };
 
 export default function PrivacyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           <div className="w-8 h-8 rounded-[10px] bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shadow-blue-500/30">
             <span className="text-white text-sm font-bold">L</span>
           </div>
-          <span className="text-slate-800 font-bold text-[15px] tracking-tight">Lexify</span>
+          <span className="text-slate-800 font-bold text-[15px] tracking-tight">Youtube Lexify</span>
         </Link>
         <Link href="/" className="text-sm text-slate-500 hover:text-slate-800 transition-colors">
           ← Back to home
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold text-slate-800 mb-3">1. Overview</h2>
             <p>
-              Lexify (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) provides a Chrome extension and web dashboard that
+              Youtube Lexify (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) provides a Chrome extension and web dashboard that
               helps users look up definitions of words in YouTube subtitles and build a personal
               vocabulary. This policy explains what data we collect, why we collect it, and how
               it is used.
@@ -147,7 +147,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold text-slate-800 mb-3">8. Children&apos;s Privacy</h2>
             <p className="text-sm">
-              Lexify is not directed at children under 13. We do not knowingly collect personal
+              Youtube Lexify is not directed at children under 13. We do not knowingly collect personal
               information from children under 13.
             </p>
           </section>
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-slate-200/60 py-8 px-6 mt-8">
         <div className="max-w-3xl mx-auto flex items-center justify-between text-sm text-slate-400">
-          <span>© {new Date().getFullYear()} Lexify</span>
+          <span>© {new Date().getFullYear()} Youtube Lexify</span>
           <Link href="/" className="hover:text-slate-600 transition-colors">Home</Link>
         </div>
       </footer>
