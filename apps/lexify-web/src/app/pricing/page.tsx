@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   Calendar,
   CreditCard,
-  X,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -87,7 +86,6 @@ export default function PricingPage() {
   const [details, setDetails] = useState<SubDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const jwt = (session as any)?.accessToken;
 
@@ -107,41 +105,16 @@ export default function PricingPage() {
   const isPro = details?.tier === 'PRO';
   const sub = details?.subscription;
 
-  // Called when user clicks "Upgrade to Pro" — shows the provider picker modal
   const handleUpgradeClick = () => {
     if (!session) {
       signIn('google', { callbackUrl: '/pricing' });
       return;
     }
-    setShowPaymentModal(true);
-  };
-
-  const handleStripe = async () => {
-    setLoading(true);
-    setShowPaymentModal(false);
-    try {
-      const res = await fetch(`${API}/subscription/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
-        body: JSON.stringify({
-          priceId: PLANS[billing].stripePriceId,
-          successUrl: `${window.location.origin}/?upgraded=true`,
-          cancelUrl: `${window.location.origin}/pricing`,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false);
-    }
+    void handleRazorpay();
   };
 
   const handleRazorpay = async () => {
     setLoading(true);
-    setShowPaymentModal(false);
     try {
       const loaded = await loadRazorpayScript();
       if (!loaded) throw new Error('Razorpay SDK failed to load');
@@ -457,7 +430,7 @@ export default function PricingPage() {
             </div>
 
             <p className="text-center text-slate-400 text-sm mt-10">
-              Secure payment via Stripe. Cancel anytime. No hidden fees.
+              Secure payment via Razorpay. Cancel anytime. No hidden fees.
             </p>
           </>
         )}
@@ -470,81 +443,6 @@ export default function PricingPage() {
         )}
       </div>
 
-      {/* Payment provider modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setShowPaymentModal(false)}
-          />
-          <div className="relative w-full max-w-sm bg-white rounded-[28px] shadow-2xl p-8">
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
-            >
-              <X size={18} />
-            </button>
-
-            <h2 className="text-xl font-extrabold text-slate-800 mb-1">Choose payment method</h2>
-            <p className="text-sm text-slate-500 mb-7">
-              Select how you'd like to pay for Lexify Pro (
-              {billing === 'annual' ? '$4/mo billed annually' : '$5/mo'}).
-            </p>
-
-            <div className="flex flex-col gap-3">
-              {/* Stripe */}
-              <button
-                onClick={handleStripe}
-                className="flex items-center gap-4 w-full border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 rounded-2xl px-5 py-4 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#635BFF] flex items-center justify-center shrink-0">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="w-5 h-5 fill-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-800 group-hover:text-blue-700">
-                    Pay with Stripe
-                  </p>
-                  <p className="text-xs text-slate-500">Credit/debit card, international</p>
-                </div>
-              </button>
-
-              {/* Razorpay */}
-              <button
-                onClick={handleRazorpay}
-                className="flex items-center gap-4 w-full border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 rounded-2xl px-5 py-4 transition-all group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-[#072654] flex items-center justify-center shrink-0">
-                  <svg viewBox="0 0 40 40" className="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 4L6 12v16l14 8 14-8V12L20 4z" fill="#3395FF" />
-                    <path
-                      d="M20 4v36M6 12l14 8 14-8"
-                      stroke="white"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-slate-800 group-hover:text-blue-700">
-                    Pay with Razorpay
-                  </p>
-                  <p className="text-xs text-slate-500">UPI, cards, net banking, wallets</p>
-                </div>
-              </button>
-            </div>
-
-            <p className="text-center text-xs text-slate-400 mt-6">
-              Secure, encrypted payments. Cancel anytime.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
