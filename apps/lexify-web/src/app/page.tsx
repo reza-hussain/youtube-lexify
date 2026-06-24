@@ -437,10 +437,10 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/pricing"
+                href="/login"
                 className="relative w-full py-3 px-6 rounded-xl font-bold text-sm text-center bg-white text-blue-600 hover:bg-white/90 transition-all active:scale-[0.98]"
               >
-                Upgrade to Pro
+                Get Started
               </Link>
             </div>
           </div>

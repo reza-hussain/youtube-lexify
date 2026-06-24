@@ -228,14 +228,14 @@ export default function Dashboard() {
           <div className="flex bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50">
             <button
                onClick={() => setViewMode('list')}
-               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all cursor-pointer ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
             >
                <List size={16} />
                Dictionary
             </button>
             <button
                onClick={() => setViewMode('analytics')}
-               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all ${viewMode === 'analytics' ? 'bg-white shadow-sm text-blue-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
+               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-sm transition-all cursor-pointer ${viewMode === 'analytics' ? 'bg-white shadow-sm text-blue-600 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}
             >
                <BarChart3 size={16} />
                Analytics
@@ -291,6 +291,16 @@ export default function Dashboard() {
                     >
                       <Zap size={15} />
                       Upgrade to Pro
+                    </Link>
+                  )}
+                  {((session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN') && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50 rounded-xl transition-colors"
+                    >
+                      <BarChart3 size={15} />
+                      Admin Dashboard
                     </Link>
                   )}
                   <button

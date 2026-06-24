@@ -77,73 +77,33 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold mb-1 text-slate-800 tracking-tight text-center">Welcome back</h1>
           <p className="text-slate-500 mb-8 text-sm text-center">Sign in to manage your vocabulary.</p>
 
+          {/* Email login tab commented out — re-enable when email auth is ready
           <div className="flex bg-slate-100 rounded-xl p-1 mb-6 gap-1">
-            <button
-              onClick={() => setTab("google")}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${tab === "google" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Google
-            </button>
-            <button
-              onClick={() => setTab("email")}
-              className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${tab === "email" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Email
-            </button>
+            <button onClick={() => setTab("google")} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${tab === "google" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Google</button>
+            <button onClick={() => setTab("email")} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${tab === "email" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Email</button>
           </div>
+          */}
 
-          {tab === "google" ? (
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              className="w-full py-3 px-6 bg-white hover:bg-slate-50 text-slate-800 rounded-xl font-semibold shadow-sm border border-slate-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-            >
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-              Continue with Google
-            </button>
-          ) : (
+          <button
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            className="w-full py-3 px-6 bg-white hover:bg-slate-50 text-slate-800 rounded-xl font-semibold shadow-sm border border-slate-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+          >
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+            Continue with Google
+          </button>
+
+          {/* Email login form commented out — re-enable when email auth is ready
+          {tab === "email" && (
             <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
-              {isRegister && (
-                <input
-                  type="text"
-                  placeholder="Full name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              )}
-              <input
-                type="email"
-                placeholder="Email address"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
+              {isRegister && (<input type="text" placeholder="Full name" value={name} onChange={e => setName(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />)}
+              <input type="email" placeholder="Email address" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+              <input type="password" placeholder="Password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
               {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors disabled:opacity-60 text-sm mt-1"
-              >
-                {loading ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setIsRegister(r => !r); setError(""); }}
-                className="text-xs text-slate-500 hover:text-slate-700 text-center transition-colors mt-1"
-              >
-                {isRegister ? "Already have an account? Sign in" : "Don't have an account? Register"}
-              </button>
+              <button type="submit" disabled={loading} className="w-full py-3 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors disabled:opacity-60 text-sm mt-1">{loading ? "Please wait…" : isRegister ? "Create account" : "Sign in"}</button>
+              <button type="button" onClick={() => { setIsRegister(r => !r); setError(""); }} className="text-xs text-slate-500 hover:text-slate-700 text-center transition-colors mt-1">{isRegister ? "Already have an account? Sign in" : "Don't have an account? Register"}</button>
             </form>
           )}
+          */}
         </div>
       </div>
     </div>
