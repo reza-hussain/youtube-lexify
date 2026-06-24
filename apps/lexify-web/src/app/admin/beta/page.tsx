@@ -10,7 +10,7 @@ interface BetaRequest {
   source: string | null;
   requestedAt: string;
   reviewedAt: string | null;
-  user: { email: string; name: string; createdAt: string };
+  user: { email: string; name: string; createdAt: string; betaProExpiresAt: string | null };
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -159,6 +159,11 @@ function RequestRow({
           <p className="text-xs text-slate-500">{req.user.email}</p>
           <p className="text-xs text-slate-400 mt-0.5">
             Requested {new Date(req.requestedAt).toLocaleDateString()} · Source: {req.source ?? "unknown"}
+            {req.status === "APPROVED" && req.user.betaProExpiresAt && (
+              <> · Pro expires <span className={new Date(req.user.betaProExpiresAt) < new Date() ? "text-red-400 font-semibold" : "text-green-500 font-semibold"}>
+                {new Date(req.user.betaProExpiresAt).toLocaleDateString()}
+              </span></>
+            )}
           </p>
         </div>
       </div>

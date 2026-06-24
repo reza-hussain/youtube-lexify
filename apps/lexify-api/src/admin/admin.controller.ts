@@ -66,7 +66,7 @@ export class AdminController {
   @Get('beta/requests')
   getBetaRequests() {
     return this.prisma.betaRequest.findMany({
-      include: { user: { select: { email: true, name: true, createdAt: true } } },
+      include: { user: { select: { email: true, name: true, createdAt: true, betaProExpiresAt: true } } },
       orderBy: { requestedAt: 'desc' },
     });
   }
