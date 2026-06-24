@@ -354,7 +354,12 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
           chrome.runtime.sendMessage({ type: 'OPEN_POPUP' });
           return;
        }
-       
+
+       if (response && response.status === 'quota_exceeded') {
+          dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Daily limit reached. Upgrade to Pro for unlimited lookups.' });
+          return;
+       }
+
        if (response && response.status === 'success') {
           const data = response.definition;
           let meaningString = '';

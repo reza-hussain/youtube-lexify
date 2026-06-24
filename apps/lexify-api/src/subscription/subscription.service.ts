@@ -251,18 +251,31 @@ export class SubscriptionService {
 
   /** Create a Razorpay subscription and return the details needed by the frontend. */
   async createRazorpaySubscription(userId: string, planId: string) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new BadRequestException('Razorpay is not configured on this server');
+    }
+
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { name: true, email: true },
     });
 
     const isAnnual = planId === process.env.RAZORPAY_PLAN_ID_ANNUAL;
-    const subscription = await this.razorpay.subscriptions.create({
-      plan_id: planId,
-      total_count: isAnnual ? 10 : 120, // 10 years for annual, 10 years for monthly
-      quantity: 1,
-      customer_notify: 1,
-    });
+
+    let subscription: any;
+    try {
+      subscription = await this.razorpay.subscriptions.create({
+        plan_id: planId,
+        total_count: isAnnual ? 10 : 120,
+        quantity: 1,
+        customer_notify: 1,
+      });
+    } catch (err: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const detail = err?.error?.description ?? err?.message ?? String(err);
+      console.error('[Subscription] Razorpay subscription create failed:', detail);
+      throw new BadRequestException(`Razorpay error: ${detail}`);
+    }
 
     return {
       subscriptionId: subscription.id,
