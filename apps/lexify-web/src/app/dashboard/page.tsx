@@ -336,7 +336,7 @@ export default function Dashboard() {
                 )}
                 {betaStatus.status === 'PENDING' && (
                   <p className="text-sm font-medium text-slate-700">
-                    Your beta access request is <span className="font-bold text-amber-600">under review</span>. We&apos;ll email you soon!
+                    Your beta access request is <span className="font-bold text-amber-600">under review</span>. Check back here for updates.
                   </p>
                 )}
                 {betaStatus.status === 'REJECTED' && (
