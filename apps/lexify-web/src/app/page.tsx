@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Zap, Download, Brain, Star, ArrowRight, Check } from 'lucide-react';
+import { BookOpen, Zap, Download, PlayCircle, Brain, Star, ArrowRight, Check } from 'lucide-react';
 
 export const metadata = {
   title: 'Lexify — Grow your vocab as you watch.',
