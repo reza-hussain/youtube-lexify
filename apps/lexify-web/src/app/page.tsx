@@ -51,7 +51,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#F7F9FB] font-sans antialiased">
       {/* Navbar */}
       <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 pb-2">
-        <nav className="max-w-5xl mx-auto flex items-center justify-between bg-white/85 backdrop-blur-2xl border border-slate-200/70 rounded-2xl px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)_inset]">
+        <nav className="max-w-5xl mx-auto flex items-center justify-between bg-white border md:bg-white/85 md:backdrop-blur-2xl border-slate-200/70 rounded-2xl px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)_inset]">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-[10px] bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shadow-blue-500/30">
               <span className="text-white text-sm font-bold tracking-tight">L</span>
@@ -102,8 +102,8 @@ export default function LandingPage() {
 
       {/* Hero — starts at top-0, navbar floats over it */}
       <section className="relative overflow-hidden bg-[#0F172A] text-white pt-20">
-        {/* Background glows */}
-        <div className="absolute inset-0 pointer-events-none">
+        {/* Background glows — hidden on mobile (too expensive to paint) */}
+        <div className="absolute inset-0 pointer-events-none hidden md:block">
           <div className="absolute -top-32 left-1/4 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
           <div className="absolute top-20 right-0 w-[400px] h-[400px] bg-cyan-500/15 rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/10 rounded-full blur-[80px]" />
@@ -177,9 +177,9 @@ export default function LandingPage() {
                 {/* Fake video scene — lecture / documentary feel */}
                 <div className="absolute inset-0">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#1a2744] via-[#0d1929] to-[#000d1a]" />
-                  {/* Ambient colour blobs suggesting real video content */}
-                  <div className="absolute top-4 left-8 w-48 h-32 bg-blue-700/20 rounded-full blur-[40px]" />
-                  <div className="absolute bottom-16 right-12 w-36 h-24 bg-indigo-600/15 rounded-full blur-[30px]" />
+                  {/* Ambient colour blobs — hidden on mobile */}
+                  <div className="absolute top-4 left-8 w-48 h-32 bg-blue-700/20 rounded-full blur-[40px] hidden md:block" />
+                  <div className="absolute bottom-16 right-12 w-36 h-24 bg-indigo-600/15 rounded-full blur-[30px] hidden md:block" />
                   {/* Silhouette of a presenter */}
                   <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-25">
                     <div className="w-10 h-10 rounded-full bg-slate-300 mb-1" />
@@ -289,8 +289,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Glow under mockup */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-16 bg-blue-500/20 blur-[50px] rounded-full" />
+            {/* Glow under mockup — hidden on mobile */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-16 bg-blue-500/20 blur-[50px] rounded-full hidden md:block" />
           </div>
         </div>
       </section>
@@ -333,7 +333,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="group bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(77,163,255,0.1)] hover:border-blue-200 transition-all duration-300">
+            <div className="group bg-white border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(77,163,255,0.1)] hover:border-blue-200 transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-md shadow-blue-500/20 mb-5">
                 <Zap size={22} className="text-white" />
               </div>
@@ -344,7 +344,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="group bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(168,85,247,0.1)] hover:border-violet-200 transition-all duration-300">
+            <div className="group bg-white border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(168,85,247,0.1)] hover:border-violet-200 transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500 to-purple-400 flex items-center justify-center shadow-md shadow-violet-500/20 mb-5">
                 <Brain size={22} className="text-white" />
               </div>
@@ -355,7 +355,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="group bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(20,184,166,0.1)] hover:border-teal-200 transition-all duration-300">
+            <div className="group bg-white border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(20,184,166,0.1)] hover:border-teal-200 transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center shadow-md shadow-teal-500/20 mb-5">
                 <BookOpen size={22} className="text-white" />
               </div>
@@ -366,7 +366,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="group bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.08)] hover:border-amber-200 transition-all duration-300">
+            <div className="group bg-white border border-slate-200/60 rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(245,158,11,0.08)] hover:border-amber-200 transition-all duration-300">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center shadow-md shadow-amber-500/20 mb-5">
                 <Download size={22} className="text-white" />
               </div>
@@ -385,7 +385,7 @@ export default function LandingPage() {
         id="how-it-works"
         className="py-24 px-6 bg-[#0F172A] text-white relative overflow-hidden"
       >
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none hidden md:block">
           <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-cyan-500/10 rounded-full blur-[80px]" />
         </div>
@@ -475,8 +475,8 @@ export default function LandingPage() {
 
             {/* Pro */}
             <div className="relative bg-gradient-to-br from-blue-600 to-cyan-500 rounded-[28px] p-8 flex flex-col shadow-xl shadow-blue-500/20 overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-xl hidden md:block" />
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl hidden md:block" />
               <div className="relative flex items-center justify-between mb-1">
                 <h3 className="text-xl font-bold text-white">Pro</h3>
                 <span className="bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full tracking-wider uppercase">Best Value</span>
