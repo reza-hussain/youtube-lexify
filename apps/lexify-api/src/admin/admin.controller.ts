@@ -6,6 +6,7 @@ import { Roles } from '../auth/roles.decorator';
 import { BetaService } from '../beta/beta.service';
 import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FeedbackService } from '../feedback/feedback.service';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -16,6 +17,7 @@ export class AdminController {
     private readonly betaService: BetaService,
     private readonly emailService: EmailService,
     private readonly prisma: PrismaService,
+    private readonly feedbackService: FeedbackService,
   ) {}
 
   @Get('overview')
@@ -90,5 +92,15 @@ export class AdminController {
     await this.prisma.betaRequest.update({ where: { id: requestId }, data: { status: 'REJECTED', reviewedAt: new Date() } });
     await this.emailService.sendBetaRejected(req.user.email, req.user.name ?? 'there');
     return { ok: true };
+  }
+
+  @Get('feedback')
+  getAllFeedback() {
+    return this.feedbackService.getAll();
+  }
+
+  @Patch('feedback/:id/feature')
+  toggleFeatured(@Param('id') id: string) {
+    return this.feedbackService.toggleFeatured(id);
   }
 }

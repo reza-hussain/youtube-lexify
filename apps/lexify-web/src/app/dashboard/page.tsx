@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
-import { BookOpen, LogOut, ExternalLink, Search, Clock, PlayCircle, Download, BarChart3, List, TrendingUp, CalendarDays, Zap, Heart, ChevronDown, CreditCard } from "lucide-react";
+import { BookOpen, LogOut, ExternalLink, Search, Clock, PlayCircle, Download, BarChart3, List, TrendingUp, CalendarDays, Zap, Heart, ChevronDown, CreditCard, MessageSquarePlus, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -58,6 +58,14 @@ export default function Dashboard() {
   const [betaStatus, setBetaStatus] = useState<{ status: string; slotsRemaining: number } | null>(null);
   const [betaLoading, setBetaLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackHover, setFeedbackHover] = useState(0);
+  const [feedbackCategory, setFeedbackCategory] = useState<'review' | 'bug' | 'feature'>('review');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackAnonymous, setFeedbackAnonymous] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,6 +136,26 @@ export default function Dashboard() {
       }
     } catch { /* ignore */ } finally {
       setBetaLoading(false);
+    }
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackRating || !feedbackMessage.trim()) return;
+    const jwt = (session as any)?.accessToken;
+    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    setFeedbackLoading(true);
+    try {
+      const res = await fetch(`${API}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({ rating: feedbackRating, category: feedbackCategory, message: feedbackMessage.trim(), anonymous: feedbackAnonymous }),
+      });
+      if (res.ok) {
+        setFeedbackDone(true);
+        setTimeout(() => { setFeedbackOpen(false); setFeedbackDone(false); setFeedbackRating(0); setFeedbackMessage(''); setFeedbackCategory('review'); setFeedbackAnonymous(false); }, 2000);
+      }
+    } catch { /* ignore */ } finally {
+      setFeedbackLoading(false);
     }
   };
 
@@ -315,6 +343,107 @@ export default function Dashboard() {
             )}
           </div>
         </header>
+
+        {/* Floating feedback button */}
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-white border border-slate-200 shadow-lg hover:shadow-xl text-slate-700 hover:text-blue-600 font-semibold text-sm px-4 py-3 rounded-2xl transition-all cursor-pointer hover:border-blue-200"
+        >
+          <MessageSquarePlus size={16} />
+          Give Feedback
+        </button>
+
+        {/* Feedback Modal */}
+        {feedbackOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 relative">
+              <button onClick={() => setFeedbackOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X size={18} />
+              </button>
+
+              {feedbackDone ? (
+                <div className="flex flex-col items-center py-8 gap-3">
+                  <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-2xl">✓</div>
+                  <p className="text-lg font-bold text-slate-800">Thanks for your feedback!</p>
+                  <p className="text-sm text-slate-500">We really appreciate it.</p>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-lg font-bold text-slate-800 mb-1">Share your feedback</h2>
+                  <p className="text-sm text-slate-500 mb-5">Help us improve Youtube Lexify.</p>
+
+                  {/* Star rating */}
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Your rating</p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setFeedbackRating(s)}
+                          onMouseEnter={() => setFeedbackHover(s)}
+                          onMouseLeave={() => setFeedbackHover(0)}
+                          className="cursor-pointer transition-transform hover:scale-110"
+                        >
+                          <Star
+                            size={28}
+                            className={`transition-colors ${s <= (feedbackHover || feedbackRating) ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200 fill-slate-200'}`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Category */}
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Category</p>
+                    <div className="flex gap-2">
+                      {([['review', '📝 Review'], ['bug', '🐛 Bug Report'], ['feature', '💡 Feature Request']] as const).map(([val, label]) => (
+                        <button
+                          key={val}
+                          onClick={() => setFeedbackCategory(val)}
+                          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${feedbackCategory === val ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Message</p>
+                    <textarea
+                      value={feedbackMessage}
+                      onChange={(e) => setFeedbackMessage(e.target.value)}
+                      placeholder={feedbackCategory === 'bug' ? 'Describe the bug and steps to reproduce...' : feedbackCategory === 'feature' ? 'What feature would you like to see?' : 'Share your experience...'}
+                      rows={4}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none"
+                    />
+                  </div>
+
+                  {/* Anonymous */}
+                  <label className="flex items-center gap-2 mb-5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={feedbackAnonymous}
+                      onChange={(e) => setFeedbackAnonymous(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 accent-blue-500"
+                    />
+                    <span className="text-sm text-slate-600">Submit anonymously</span>
+                  </label>
+
+                  <button
+                    onClick={submitFeedback}
+                    disabled={!feedbackRating || !feedbackMessage.trim() || feedbackLoading}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors cursor-pointer text-sm"
+                  >
+                    {feedbackLoading ? 'Sending...' : 'Send Feedback'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {quota && quota.tier === 'FREE' && quota.dailyLimit !== null && (
           <div className="mb-4 flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/60 rounded-2xl px-6 py-4">

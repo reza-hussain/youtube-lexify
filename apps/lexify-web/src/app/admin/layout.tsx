@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, BookOpen, Settings, LogOut, ShieldAlert, Gift } from "lucide-react";
+import { LayoutDashboard, Users, BookOpen, Settings, LogOut, ShieldAlert, Gift, MessageSquare } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ const adminNavItems = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Beta Requests", href: "/admin/beta", icon: Gift },
+  { name: "Feedback", href: "/admin/feedback", icon: MessageSquare },
   { name: "Words Analytics", href: "/admin/words", icon: BookOpen },
   { name: "Settings & Logs", href: "/admin/settings", icon: Settings },
 ];

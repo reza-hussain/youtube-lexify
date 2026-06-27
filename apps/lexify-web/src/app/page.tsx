@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BookOpen, Zap, Download, PlayCircle, Brain, Star, ArrowRight, Check } from 'lucide-react';
+import Testimonials from './components/Testimonials';
 
 function ChromeIcon({ size = 16 }: { size?: number }) {
   return (
@@ -379,6 +380,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials — renders only when featured reviews exist */}
+      <Testimonials />
 
       {/* How it works */}
       <section

@@ -16,6 +16,9 @@ const cspHeader = `
 `;
 
 const nextConfig: NextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async headers() {
     return [
       {

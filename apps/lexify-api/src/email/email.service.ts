@@ -99,6 +99,35 @@ export class EmailService {
     }
   }
 
+  async sendFeedbackAlert(opts: {
+    rating: number;
+    category: string;
+    message: string;
+    userName: string;
+    userEmail: string | null;
+    feedbackId: string;
+  }) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return;
+    const stars = '⭐'.repeat(opts.rating);
+    const categoryLabel = opts.category === 'review' ? '📝 Review' : opts.category === 'bug' ? '🐛 Bug Report' : '💡 Feature Request';
+    try {
+      await this.resend.emails.send({
+        from: 'Youtube Lexify <hi@youtubelexify.com>',
+        to: [adminEmail],
+        subject: `${stars} New ${categoryLabel} from ${opts.userName}`,
+        html: `
+          <h2>${categoryLabel} — ${stars}</h2>
+          <p><strong>From:</strong> ${opts.userName}${opts.userEmail ? ` (${opts.userEmail})` : ' (anonymous)'}</p>
+          <blockquote style="border-left:4px solid #4DA3FF;padding-left:12px;color:#333">${opts.message}</blockquote>
+          <p style="color:#888;font-size:12px">Feedback ID: ${opts.feedbackId}</p>
+        `,
+      });
+    } catch (err) {
+      console.error('Error sending feedback alert:', err);
+    }
+  }
+
   async sendWelcomeEmail(to: string, name: string) {
     try {
       // Create the email component
