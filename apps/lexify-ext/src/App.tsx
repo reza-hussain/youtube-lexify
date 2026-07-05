@@ -10,10 +10,17 @@ interface StatusData {
   remaining: number | null;
 }
 
+interface StatsData {
+  streak: number;
+  todayWords: number;
+  totalWords: number;
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [mode, setMode] = useState<'hover' | 'click'>('hover');
   const [status, setStatus] = useState<StatusData | null>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -22,7 +29,10 @@ function App() {
       const isValid = !!(result.lexifyJwt && result.lexifyJwtExpiresAt > Date.now());
       setIsLoggedIn(isValid);
       setMode(result.lexifyMode ?? 'hover');
-      if (isValid) fetchStatus(result.lexifyJwt);
+      if (isValid) {
+        fetchStatus(result.lexifyJwt);
+        fetchStats();
+      }
     });
   }, []);
 
@@ -33,6 +43,14 @@ function App() {
       });
       if (res.ok) setStatus(await res.json());
     } catch {}
+  };
+
+  const fetchStats = () => {
+    chrome.runtime.sendMessage({ type: 'GET_STATS' }, (response) => {
+      if (response?.status === 'success') {
+        setStats({ streak: response.streak, todayWords: response.todayWords, totalWords: response.totalWords });
+      }
+    });
   };
 
   const handleLogin = () => {
@@ -51,6 +69,7 @@ function App() {
           const jwt = result.lexifyJwt as string;
           setIsLoggedIn(true);
           fetchStatus(jwt);
+          fetchStats();
           setLoginLoading(false);
         });
       } else {
@@ -215,6 +234,35 @@ function App() {
           </p>
         )}
       </div>
+
+      {/* Streak & stats */}
+      {stats && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-3">
+            Your Progress
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-2xl font-extrabold text-slate-800">
+                {stats.streak > 0 ? `🔥 ${stats.streak}` : '—'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
+                {stats.streak === 1 ? 'day streak' : 'day streak'}
+              </span>
+            </div>
+            <div className="w-px h-8 bg-slate-100" />
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-2xl font-extrabold text-slate-800">{stats.todayWords}</span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">today</span>
+            </div>
+            <div className="w-px h-8 bg-slate-100" />
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-2xl font-extrabold text-slate-800">{stats.totalWords}</span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">total</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Go to Dashboard */}
       <a

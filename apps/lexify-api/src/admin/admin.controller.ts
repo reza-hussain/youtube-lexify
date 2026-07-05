@@ -25,6 +25,11 @@ export class AdminController {
     return this.adminService.getOverviewStats();
   }
 
+  @Get('active-users-chart')
+  getActiveUsersChart() {
+    return this.adminService.getActiveUsersChart(7);
+  }
+
   @Get('users')
   getUsers() {
     return this.adminService.getAllUsers();

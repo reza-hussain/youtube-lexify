@@ -36,6 +36,33 @@ export class AdminService {
     };
   }
 
+  async getActiveUsersChart(days = 7): Promise<{ name: string; users: number }[]> {
+    // Build a date series for the past N days so days with zero sessions still appear
+    const result: { name: string; users: number }[] = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const day = new Date(now);
+      day.setUTCDate(day.getUTCDate() - i);
+      day.setUTCHours(0, 0, 0, 0);
+      const dayEnd = new Date(day);
+      dayEnd.setUTCHours(23, 59, 59, 999);
+
+      const count = await this.prisma.session.findMany({
+        where: { startedAt: { gte: day, lte: dayEnd } },
+        select: { userId: true },
+        distinct: ['userId'],
+      });
+
+      result.push({
+        name: day.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+        users: count.length,
+      });
+    }
+
+    return result;
+  }
+
   async getAllUsers() {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },

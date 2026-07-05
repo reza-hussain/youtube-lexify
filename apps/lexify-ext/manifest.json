@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Lexify",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Understand Every Word. Instantly.",
   "action": {
     "default_popup": "index.html"

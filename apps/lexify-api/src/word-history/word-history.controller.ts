@@ -28,6 +28,16 @@ export class WordHistoryController {
     }
   }
 
+  @Post('explain-sentence')
+  async explainSentence(@Request() req: any, @Body() body: { sentence: string }) {
+    return this.wordHistoryService.explainSentence(req.user.id, body.sentence);
+  }
+
+  @Get('stats')
+  async getStats(@Request() req: any) {
+    return this.wordHistoryService.getStats(req.user.id);
+  }
+
   @Patch(':id/favourite')
   async toggleFavourite(@Request() req: any, @Param('id') id: string) {
     return this.wordHistoryService.toggleFavourite(req.user.id, id);

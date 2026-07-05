@@ -44,14 +44,15 @@ export class AiService {
   private buildSystemPrompt(encounterCount: number): string {
     const wantsExtras = encounterCount >= 3;
     const extrasField = wantsExtras
-      ? `  "etymology": "<one-sentence etymology to help remember the word>",\n  "tip": "<memorable mnemonic or usage tip>"`
-      : `  "etymology": "",\n  "tip": ""`;
+      ? `  "etymology": "<one-sentence etymology to help remember the word>",\n  "tip": "<memorable mnemonic or usage tip>",`
+      : `  "etymology": "",\n  "tip": "",`;
 
     return `You are a concise, context-aware dictionary. Respond ONLY with a valid JSON array in exactly this structure — no markdown, no explanation:
 [{
   "word": "<word>",
   "phonetic": "<IPA phonetic or empty string>",
   "phonetics": [],
+  "cefr": "<A1|A2|B1|B2|C1|C2>",
   "meanings": [
     {
       "partOfSpeech": "<noun|verb|adjective|adverb|etc>",
@@ -63,6 +64,21 @@ export class AiService {
 ${extrasField}
 }]
 If a context sentence is provided, tailor the definition to that exact usage.${wantsExtras ? ' The user has seen this word multiple times — make the definition and tip especially memorable.' : ''}`;
+  }
+
+  /** Explain a full subtitle sentence in plain English. PRO only. */
+  async explainSentence(sentence: string): Promise<string | null> {
+    try {
+      const message = await this.anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: `You are a friendly English teacher helping a language learner understand YouTube content. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.`,
+        messages: [{ role: 'user', content: `Explain: "${sentence}"` }],
+      });
+      return (message.content[0] as any).text as string;
+    } catch {
+      return null;
+    }
   }
 
   private async callClaude(

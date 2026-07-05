@@ -13,17 +13,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Dummy data for charts until we build the historical tracking API
-const growthData = [
-  { name: 'Mon', users: 12 },
-  { name: 'Tue', users: 19 },
-  { name: 'Wed', users: 24 },
-  { name: 'Thu', users: 31 },
-  { name: 'Fri', users: 45 },
-  { name: 'Sat', users: 62 },
-  { name: 'Sun', users: 85 },
-];
-
 export default function AdminOverview() {
   const { data: session } = useSession();
   const [stats, setStats] = useState({
@@ -32,24 +21,26 @@ export default function AdminOverview() {
     dau: 0,
     mau: 0,
   });
+  const [growthData, setGrowthData] = useState<{ name: string; users: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchStats() {
       if (!session) return;
+      const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      const headers = { Authorization: `Bearer ${(session as any).accessToken}` };
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/admin/overview`, {
-          headers: {
-            Authorization: `Bearer ${(session as any).accessToken}`,
-          },
-        });
-        if (!res.ok) {
-          if (res.status === 403) throw new Error("Requires Super Admin role.");
-          throw new Error("Failed to load generic stats");
+        const [overviewRes, chartRes] = await Promise.all([
+          fetch(`${api}/admin/overview`, { headers }),
+          fetch(`${api}/admin/active-users-chart`, { headers }),
+        ]);
+        if (!overviewRes.ok) {
+          if (overviewRes.status === 403) throw new Error("Requires Super Admin role.");
+          throw new Error("Failed to load stats");
         }
-        const data = await res.json();
-        setStats(data);
+        setStats(await overviewRes.json());
+        if (chartRes.ok) setGrowthData(await chartRes.json());
       } catch (err: any) {
         setError(err.message);
       } finally {

@@ -157,6 +157,44 @@ export class WordHistoryService {
     return result;
   }
 
+  async explainSentence(userId: string, sentence: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { subscriptionTier: true, status: true },
+    });
+    if (user.status === 'SUSPENDED') throw new ForbiddenException('Account suspended');
+    if (user.subscriptionTier !== 'PRO') throw new ForbiddenException('PRO subscription required');
+    const explanation = await this.aiService.explainSentence(sentence);
+    return { explanation };
+  }
+
+  async getStats(userId: string) {
+    const [totalWords, encounters] = await Promise.all([
+      this.prisma.wordSense.count({ where: { userId } }),
+      this.prisma.wordEncounter.findMany({
+        where: { wordSense: { userId } },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const todayUTC = new Date();
+    todayUTC.setUTCHours(0, 0, 0, 0);
+    const todayWords = encounters.filter(e => new Date(e.createdAt) >= todayUTC).length;
+
+    // Compute streak: consecutive days (including today) with at least 1 encounter
+    const daySet = new Set(encounters.map(e => e.createdAt.toISOString().split('T')[0]));
+    let streak = 0;
+    const cursor = new Date();
+    cursor.setUTCHours(0, 0, 0, 0);
+    while (daySet.has(cursor.toISOString().split('T')[0])) {
+      streak++;
+      cursor.setUTCDate(cursor.getUTCDate() - 1);
+    }
+
+    return { streak, todayWords, totalWords };
+  }
+
   async toggleFavourite(userId: string, wordSenseId: string) {
     const sense = await this.prisma.wordSense.findFirst({
       where: { id: wordSenseId, userId },

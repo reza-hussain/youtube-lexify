@@ -277,6 +277,45 @@ chrome.runtime.onMessage.addListener(
       return true;
     }
 
+    // ── EXPLAIN_SENTENCE ────────────────────────────────────────────────────
+    if (request.type === 'EXPLAIN_SENTENCE') {
+      (async () => {
+        const jwt = await getSilentJwt();
+        if (!jwt) { sendResponse({ status: 'require_login' }); return; }
+        try {
+          const res = await fetch(`${API_URL}/words/explain-sentence`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sentence: request.sentence }),
+          });
+          if (!res.ok) { sendResponse({ status: 'error' }); return; }
+          const data = await res.json();
+          sendResponse({ status: 'success', explanation: data.explanation });
+        } catch {
+          sendResponse({ status: 'error' });
+        }
+      })();
+      return true;
+    }
+
+    // ── GET_STATS ────────────────────────────────────────────────────────────
+    if (request.type === 'GET_STATS') {
+      (async () => {
+        const jwt = await getSilentJwt();
+        if (!jwt) { sendResponse({ status: 'require_login' }); return; }
+        try {
+          const res = await fetch(`${API_URL}/words/stats`, {
+            headers: { Authorization: `Bearer ${jwt}` },
+          });
+          if (!res.ok) { sendResponse({ status: 'error' }); return; }
+          sendResponse({ status: 'success', ...(await res.json()) });
+        } catch {
+          sendResponse({ status: 'error' });
+        }
+      })();
+      return true;
+    }
+
     // ── SAVE_WORD ───────────────────────────────────────────────────────────
     if (request.type === 'SAVE_WORD') {
       (async () => {
