@@ -51,13 +51,15 @@ function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showWordList, setShowWordList] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt', 'lexifyMode', 'lexifyShowWordList'], (result) => {
+    chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt', 'lexifyMode', 'lexifyShowWordList', 'lexifyOnboarded'], (result) => {
       const isValid = !!(result.lexifyJwt && result.lexifyJwtExpiresAt > Date.now());
       setIsLoggedIn(isValid);
       setMode(result.lexifyMode ?? 'hover');
       setShowWordList(result.lexifyShowWordList !== false);
+      if (isValid && !result.lexifyOnboarded) setShowOnboarding(true);
       if (isValid) {
         fetchStatus(result.lexifyJwt);
         fetchStats();
@@ -125,6 +127,11 @@ function App() {
   const handleShowWordListChange = (show: boolean) => {
     setShowWordList(show);
     chrome.storage.local.set({ lexifyShowWordList: show });
+  };
+
+  const dismissOnboarding = () => {
+    setShowOnboarding(false);
+    chrome.storage.local.set({ lexifyOnboarded: true });
   };
 
   // ── Loading ────────────────────────────────────────────────────────────────
@@ -238,6 +245,38 @@ function App() {
             </div>
             <Toggle enabled={showWordList} onChange={handleShowWordListChange} />
           </div>
+        </div>
+      )}
+
+      {/* Onboarding card — shown once to new users */}
+      {showOnboarding && (
+        <div className="bg-linear-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-200/60 p-4 relative">
+          <button
+            onClick={dismissOnboarding}
+            className="absolute top-2.5 right-2.5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            title="Dismiss"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <p className="text-[11px] font-bold text-blue-500 uppercase tracking-widest mb-3">Getting Started</p>
+          <div className="flex flex-col gap-2.5">
+            {([
+              ['1', 'Open YouTube and play any video'],
+              ['2', 'Turn on subtitles (CC button)'],
+              ['3', 'Hover any subtitle word to define it'],
+            ] as const).map(([num, text]) => (
+              <div key={num} className="flex items-center gap-3">
+                <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{num}</span>
+                <span className="text-[12px] text-slate-700 font-medium">{text}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={dismissOnboarding}
+            className="mt-4 w-full py-2 bg-blue-500 hover:bg-blue-600 text-white text-[12px] font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            Got it!
+          </button>
         </div>
       )}
 

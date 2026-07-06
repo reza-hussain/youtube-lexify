@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
   const [activeFilter, setActiveFilter] = useState<'all' | 'favourites'>('all');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'az' | 'za' | 'most-encountered'>('newest');
   const [quota, setQuota] = useState<{ tier: string; remaining: number | null; dailyLimit: number | null } | null>(null);
   const [betaStatus, setBetaStatus] = useState<{ status: string; slotsRemaining: number } | null>(null);
   const [betaLoading, setBetaLoading] = useState(false);
@@ -222,11 +223,21 @@ export default function Dashboard() {
     );
   }
 
-  const filteredWords = words.filter(w => {
-    if (activeFilter === 'favourites' && !w.isFavourite) return false;
-    return w.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      w.meaning.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredWords = words
+    .filter(w => {
+      if (activeFilter === 'favourites' && !w.isFavourite) return false;
+      return w.word.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        w.meaning.toLowerCase().includes(searchQuery.toLowerCase());
+    })
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case 'oldest': return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'az': return a.word.localeCompare(b.word);
+        case 'za': return b.word.localeCompare(a.word);
+        case 'most-encountered': return (b.encounters?.length || 0) - (a.encounters?.length || 0);
+        default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
 
   const totalSenses = words.length;
   const totalEncounters = words.reduce((acc, word) => acc + (word.encounters?.length || 0), 0);
@@ -246,9 +257,7 @@ export default function Dashboard() {
         <header className="relative z-50 flex items-center justify-between mb-12 bg-white/60 backdrop-blur-md border border-white p-4 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)]">
           <div className="flex items-center gap-4 px-2">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-md shadow-blue-500/20">
-                <span className="text-white text-xl font-bold">L</span>
-              </div>
+              <img src="/logo.png" alt="Lexify" className="w-12 h-12 rounded-2xl shadow-md shadow-blue-500/20" />
               <h1 className="text-xl font-bold text-slate-800 tracking-tight">Lexify Dashboard</h1>
             </Link>
           </div>
@@ -651,20 +660,33 @@ export default function Dashboard() {
 
         {viewMode === 'list' && (
            <>
-              <div className="mb-6 flex gap-2">
-                <button
-                  onClick={() => setActiveFilter('all')}
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${activeFilter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
+              <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${activeFilter === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
+                  >
+                    All words
+                  </button>
+                  <button
+                    onClick={() => setActiveFilter('favourites')}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all cursor-pointer ${activeFilter === 'favourites' ? 'bg-red-500 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
+                  >
+                    <Heart size={13} fill={activeFilter === 'favourites' ? 'currentColor' : 'none'} />
+                    Favourites
+                  </button>
+                </div>
+                <select
+                  value={sortOrder}
+                  onChange={e => setSortOrder(e.target.value as typeof sortOrder)}
+                  className="text-sm font-semibold text-slate-600 bg-white/70 border border-slate-200/60 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                 >
-                  All words
-                </button>
-                <button
-                  onClick={() => setActiveFilter('favourites')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${activeFilter === 'favourites' ? 'bg-red-500 text-white shadow-sm' : 'bg-white/60 text-slate-500 hover:text-slate-700 border border-slate-200/60'}`}
-                >
-                  <Heart size={13} fill={activeFilter === 'favourites' ? 'currentColor' : 'none'} />
-                  Favourites
-                </button>
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="az">A → Z</option>
+                  <option value="za">Z → A</option>
+                  <option value="most-encountered">Most encountered</option>
+                </select>
               </div>
 
               {loading ? (
