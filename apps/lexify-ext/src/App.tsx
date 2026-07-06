@@ -16,6 +16,55 @@ interface StatsData {
   totalWords: number;
 }
 
+// SVG approximation of the actual Lexify logo — italic serif L with blue→cyan gradient
+const LexifyLogo = ({ size = 36 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lexLogoG" x1="10" y1="5" x2="26" y2="31" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#06b6d4" />
+      </linearGradient>
+    </defs>
+    <rect width="36" height="36" rx="9" fill="white" stroke="#e2e8f0" strokeWidth="0.75" />
+    <text x="19" y="27" textAnchor="middle" fontSize="24" fontFamily="Georgia, 'Times New Roman', serif" fontStyle="italic" fill="url(#lexLogoG)">
+      L
+    </text>
+  </svg>
+);
+
+const LexifyLogoLarge = () => (
+  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lexLogoGL" x1="14" y1="8" x2="42" y2="48" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#3b82f6" />
+        <stop offset="100%" stopColor="#06b6d4" />
+      </linearGradient>
+    </defs>
+    <rect width="56" height="56" rx="14" fill="white" stroke="#e2e8f0" strokeWidth="0.75" />
+    <text x="29" y="42" textAnchor="middle" fontSize="38" fontFamily="Georgia, 'Times New Roman', serif" fontStyle="italic" fill="url(#lexLogoGL)">
+      L
+    </text>
+  </svg>
+);
+
+const GearIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+
+function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${enabled ? 'bg-blue-500' : 'bg-slate-200'}`}
+    >
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+  );
+}
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [mode, setMode] = useState<'hover' | 'click'>('hover');
@@ -23,12 +72,15 @@ function App() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showWordList, setShowWordList] = useState(true);
 
   useEffect(() => {
-    chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt', 'lexifyMode'], (result) => {
+    chrome.storage.local.get(['lexifyJwt', 'lexifyJwtExpiresAt', 'lexifyMode', 'lexifyShowWordList'], (result) => {
       const isValid = !!(result.lexifyJwt && result.lexifyJwtExpiresAt > Date.now());
       setIsLoggedIn(isValid);
       setMode(result.lexifyMode ?? 'hover');
+      setShowWordList(result.lexifyShowWordList !== false);
       if (isValid) {
         fetchStatus(result.lexifyJwt);
         fetchStats();
@@ -56,14 +108,8 @@ function App() {
   const handleLogin = () => {
     setLoginError(null);
     setLoginLoading(true);
-
-    // Auth runs in background service worker so it survives the popup closing.
-    // When the popup reopens, the useEffect on mount picks up the stored JWT.
     chrome.runtime.sendMessage({ type: 'INITIATE_GOOGLE_LOGIN' }, (response) => {
-      if (chrome.runtime.lastError) {
-        // Popup was closed mid-flow — recheck storage on next open (handled by mount effect)
-        return;
-      }
+      if (chrome.runtime.lastError) return;
       if (response?.status === 'success') {
         chrome.storage.local.get(['lexifyJwt'], (result) => {
           const jwt = result.lexifyJwt as string;
@@ -82,10 +128,7 @@ function App() {
   const handleLogout = () => {
     chrome.storage.local.remove(['lexifyJwt', 'lexifyJwtExpiresAt'], () => {
       chrome.identity.getAuthToken({ interactive: false }, (token) => {
-        const clearState = () => {
-          setIsLoggedIn(false);
-          setStatus(null);
-        };
+        const clearState = () => { setIsLoggedIn(false); setStatus(null); };
         if (!token) { clearState(); return; }
         fetch(`https://accounts.google.com/o/oauth2/revoke?token=${token}`)
           .finally(() => {
@@ -102,6 +145,11 @@ function App() {
     chrome.storage.local.set({ lexifyMode: newMode });
   };
 
+  const handleShowWordListChange = (show: boolean) => {
+    setShowWordList(show);
+    chrome.storage.local.set({ lexifyShowWordList: show });
+  };
+
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoggedIn === null) {
     return (
@@ -116,8 +164,8 @@ function App() {
     return (
       <div className="w-75 bg-slate-50 flex flex-col items-center p-6 font-sans">
         <div className="flex flex-col items-center mb-7 mt-1">
-          <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-blue-500 to-cyan-400 shadow-lg flex items-center justify-center mb-3">
-            <span className="text-white text-2xl font-bold">L</span>
+          <div className="mb-3 drop-shadow-lg">
+            <LexifyLogoLarge />
           </div>
           <h1 className="text-xl font-bold text-slate-800">Lexify</h1>
           <p className="text-sm text-slate-500 mt-1 text-center leading-snug">
@@ -132,7 +180,7 @@ function App() {
           <button
             onClick={handleLogin}
             disabled={loginLoading}
-            className="w-full py-3 px-4 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 shadow-md transition-all flex items-center justify-center gap-2.5 text-sm disabled:opacity-60"
+            className="w-full py-3 px-4 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 shadow-md transition-all flex items-center justify-center gap-2.5 text-sm disabled:opacity-60 cursor-pointer"
           >
             {loginLoading ? (
               <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -142,9 +190,7 @@ function App() {
             {loginLoading ? 'Signing in…' : 'Sign in with Google'}
           </button>
           {loginError && (
-            <p className="text-[11px] text-red-500 font-medium mt-2 text-center break-all">
-              {loginError}
-            </p>
+            <p className="text-[11px] text-red-500 font-medium mt-2 text-center break-all">{loginError}</p>
           )}
         </div>
       </div>
@@ -162,52 +208,61 @@ function App() {
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shrink-0">
-            <span className="text-white font-bold text-base">L</span>
-          </div>
+          <LexifyLogo size={36} />
           <span className="font-bold text-slate-800 text-base">Lexify</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium"
-        >
-          Sign out
-        </button>
-      </div>
-
-      {/* Hover / Click toggle */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2.5">
-          Trigger Mode
-        </p>
-        <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+        <div className="flex items-center gap-1">
           <button
-            onClick={() => handleModeChange('hover')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-              mode === 'hover'
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            onClick={() => setShowSettings(s => !s)}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${showSettings ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+            title="Settings"
           >
-            Hover
+            <GearIcon />
           </button>
           <button
-            onClick={() => handleModeChange('click')}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-              mode === 'click'
-                ? 'bg-white text-slate-800 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            onClick={handleLogout}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-medium cursor-pointer ml-1"
           >
-            Click
+            Sign out
           </button>
         </div>
-        <p className="text-[11px] text-slate-400 mt-2 text-center">
-          {mode === 'hover'
-            ? 'Hover over a subtitle word to see its meaning'
-            : 'Click a subtitle word to see its meaning'}
-        </p>
       </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-4">
+          {/* Trigger mode */}
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-2.5">Trigger Mode</p>
+            <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => handleModeChange('hover')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${mode === 'hover' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Hover
+              </button>
+              <button
+                onClick={() => handleModeChange('click')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all cursor-pointer ${mode === 'click' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Click
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2 text-center">
+              {mode === 'hover' ? 'Hover over a subtitle word to see its meaning' : 'Click a subtitle word to see its meaning'}
+            </p>
+          </div>
+
+          {/* Word list toggle */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-700">Word list panel</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Show word count badge on YouTube</p>
+            </div>
+            <Toggle enabled={showWordList} onChange={handleShowWordListChange} />
+          </div>
+        </div>
+      )}
 
       {/* Daily lookups */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
@@ -222,10 +277,7 @@ function App() {
         </div>
         {limit !== null && (
           <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full ${barColor} rounded-full transition-all duration-500`}
-              style={{ width: `${pct}%` }}
-            />
+            <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
           </div>
         )}
         {limit !== null && count >= limit && (
@@ -246,9 +298,7 @@ function App() {
               <span className="text-2xl font-extrabold text-slate-800">
                 {stats.streak > 0 ? `🔥 ${stats.streak}` : '—'}
               </span>
-              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">
-                {stats.streak === 1 ? 'day streak' : 'day streak'}
-              </span>
+              <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">day streak</span>
             </div>
             <div className="w-px h-8 bg-slate-100" />
             <div className="flex flex-col items-center gap-0.5">
@@ -269,7 +319,7 @@ function App() {
         href={WEB_URL}
         target="_blank"
         rel="noreferrer"
-        className="w-full py-2.5 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors text-sm text-center"
+        className="w-full py-2.5 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-700 transition-colors text-sm text-center cursor-pointer"
       >
         Go to Dashboard →
       </a>

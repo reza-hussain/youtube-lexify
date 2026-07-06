@@ -4,16 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import tailwindStyles from '../index.css?inline';
 import { lookupCefr } from './cefrLookup';
 
-// Create a host element for our React app to mount into
 const host = document.createElement('div');
 host.id = 'lexify-overlay-host';
-// Force maximum z-index, viewport coverage, and ignore clicks (children can re-enable clicks)
 host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647;';
 
-// We use an open shadow DOM so our components are isolated from YouTube's CSS
 const shadowRoot = host.attachShadow({ mode: 'open' });
 
-// We need to inject our Tailwind CSS into the shadow DOM too
 const styleTag = document.createElement('style');
 styleTag.textContent = tailwindStyles;
 shadowRoot.appendChild(styleTag);
@@ -72,9 +68,26 @@ const LexifyOverlay = () => {
   const [nonEnglish, setNonEnglish] = useState(false);
   const [videoWords, setVideoWords] = useState<VideoWord[]>([]);
   const [showWordPanel, setShowWordPanel] = useState(false);
+  const [wordListEnabled, setWordListEnabled] = useState(true);
   const [currentSentence, setCurrentSentence] = useState('');
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explanationLoading, setExplanationLoading] = useState(false);
+  // controlsBottom: safe bottom offset (px) to sit above YouTube's controls bar
+  const [controlsBottom, setControlsBottom] = useState(88);
+
+  // Read word list enabled from storage and keep in sync
+  useEffect(() => {
+    chrome.storage.local.get(['lexifyShowWordList'], (result) => {
+      setWordListEnabled(result.lexifyShowWordList !== false);
+    });
+    const storageListener = (changes: Record<string, chrome.storage.StorageChange>, ns: string) => {
+      if (ns === 'local' && 'lexifyShowWordList' in changes) {
+        setWordListEnabled(changes.lexifyShowWordList.newValue !== false);
+      }
+    };
+    chrome.storage.onChanged.addListener(storageListener);
+    return () => chrome.storage.onChanged.removeListener(storageListener);
+  }, []);
 
   useEffect(() => {
     const handleReceiveDefinition = (event: Event) => {
@@ -122,6 +135,9 @@ const LexifyOverlay = () => {
       } else if (customEvent.detail.type === 'VIDEO_CHANGE') {
         setVideoWords([]);
         setShowWordPanel(false);
+      } else if (customEvent.detail.type === 'CONTROLS_HEIGHT') {
+        const h = (customEvent.detail.payload?.height ?? 0) as number;
+        setControlsBottom(Math.max(h + 12, 48));
       }
     };
 
@@ -167,6 +183,10 @@ const LexifyOverlay = () => {
   const containerClasses = isPersistent
     ? "absolute top-24 right-[10vw] w-[450px] p-6 bg-slate-50/90 backdrop-blur-[40px] rounded-[24px] shadow-[0_30px_60px_rgba(0,0,0,0.12),0_10px_20px_rgba(0,0,0,0.05),0_0_0_1px_rgba(255,255,255,0.5)] pointer-events-auto"
     : "absolute top-24 right-10 w-96 p-5 bg-[#E2E6EB80] backdrop-blur-[30px] rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 pointer-events-auto";
+
+  // Word panel sits above the controls bar, offset by controlsBottom
+  const wordPanelStyle = { bottom: `${controlsBottom + 48}px`, left: '40px' };
+  const wordBadgeStyle = { bottom: `${controlsBottom + 4}px`, left: '40px' };
 
   return (
     <>
@@ -227,7 +247,6 @@ const LexifyOverlay = () => {
                         </div>
                       )}
                     </div>
-
                     {isPersistent && (
                       <button onClick={closePanel} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 rounded-full transition-colors mt-0.5">
                         <CloseIcon />
@@ -307,15 +326,16 @@ const LexifyOverlay = () => {
         )}
       </AnimatePresence>
 
-      {/* Word panel (slide-out) */}
+      {/* Word panel — dynamically positioned above YouTube controls */}
       <AnimatePresence>
-        {showWordPanel && (
+        {showWordPanel && wordListEnabled && (
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -16 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="absolute bottom-24 left-10 w-60 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10 pointer-events-auto overflow-hidden"
+            style={wordPanelStyle}
+            className="absolute w-60 bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/10 pointer-events-auto overflow-hidden"
           >
             <div className="px-3 py-2.5 border-b border-white/10 flex items-center justify-between">
               <p className="text-white text-[12px] font-semibold uppercase tracking-wider">This video</p>
@@ -333,13 +353,14 @@ const LexifyOverlay = () => {
         )}
       </AnimatePresence>
 
-      {/* Word count toggle button */}
-      {videoWords.length > 0 && (
+      {/* Word count badge — sits above YouTube controls bar */}
+      {wordListEnabled && videoWords.length > 0 && (
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={() => setShowWordPanel(p => !p)}
-          className={`absolute bottom-10 left-10 flex items-center gap-1.5 backdrop-blur-md text-white text-[12px] font-semibold px-3 py-2 rounded-full shadow-xl border pointer-events-auto transition-colors ${showWordPanel ? 'bg-slate-700/95 border-white/20' : 'bg-slate-800/90 border-white/10 hover:bg-slate-700/90'}`}
+          style={wordBadgeStyle}
+          className={`absolute flex items-center gap-1.5 backdrop-blur-md text-white text-[12px] font-semibold px-3 py-2 rounded-full shadow-xl border pointer-events-auto transition-colors ${showWordPanel ? 'bg-slate-700/95 border-white/20' : 'bg-slate-800/90 border-white/10 hover:bg-slate-700/90'}`}
         >
           📚 {videoWords.length} {videoWords.length === 1 ? 'word' : 'words'}
         </motion.button>
@@ -350,7 +371,7 @@ const LexifyOverlay = () => {
 
 root.render(<LexifyOverlay />);
 
-// --- Subtitle Interception Logic ---
+// ─── Subtitle Interception Logic ──────────────────────────────────────────────
 
 let currentVideo: HTMLVideoElement | null = null;
 let pauseTimeout: number | null = null;
@@ -358,17 +379,45 @@ let hoverTimeout: number | null = null;
 let currentWord: string | null = null;
 let lexifyMode: 'hover' | 'click' = 'hover';
 
+// Monotonically increasing request counter — used to discard stale fetch responses
+let fetchRequestId = 0;
+
+// Keep YouTube controls visible while a word is being hovered
+let controlsKeepAliveTimer: number | null = null;
+
+const keepYtControlsVisible = () => {
+  const player = document.querySelector('#movie_player') as HTMLElement | null;
+  if (!player) return;
+  const rect = player.getBoundingClientRect();
+  player.dispatchEvent(new MouseEvent('mousemove', {
+    bubbles: true, cancelable: true,
+    clientX: rect.left + rect.width / 2,
+    clientY: rect.top + rect.height * 0.9,
+  }));
+};
+
+const startControlsKeepAlive = () => {
+  if (controlsKeepAliveTimer) return;
+  keepYtControlsVisible();
+  controlsKeepAliveTimer = window.setInterval(keepYtControlsVisible, 1500) as unknown as number;
+};
+
+const stopControlsKeepAlive = () => {
+  if (controlsKeepAliveTimer) {
+    clearInterval(controlsKeepAliveTimer);
+    controlsKeepAliveTimer = null;
+  }
+};
+
 // Initialize mode from storage ASAP
 if (typeof chrome !== 'undefined' && chrome.storage) {
   chrome.storage.local.get(['lexifyMode'], (result) => {
     lexifyMode = result.lexifyMode ?? 'hover';
   });
 
-  // Live-sync mode changes from popup
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes.lexifyMode) {
       lexifyMode = changes.lexifyMode.newValue ?? 'hover';
-      // Clear any active hover panel when switching modes
       if (!((window as any).lexifyIsPersistent)) {
         currentWord = null;
         dispatchDefinitionEvent('CLEAR');
@@ -381,8 +430,7 @@ if (typeof chrome !== 'undefined' && chrome.storage) {
 }
 
 const dispatchDefinitionEvent = (type: string, payload?: any, word?: string) => {
-  const event = new CustomEvent('LEXIFY_DEFINITION', { detail: { type, payload, word } });
-  window.dispatchEvent(event);
+  window.dispatchEvent(new CustomEvent('LEXIFY_DEFINITION', { detail: { type, payload, word } }));
 };
 
 const getCaptionLanguage = (): string | null => {
@@ -401,15 +449,14 @@ const isLikelyEnglish = (text: string): boolean => {
   return nonAscii / text.length < 0.2;
 };
 
-// Helper to tokenize a caption segment by wrapping words in spans so hover works perfectly
 const tokenizeCaptionSegment = (segment: HTMLElement) => {
   if (segment.hasAttribute('data-lexify-tokenized')) return;
   if (segment.hasAttribute('data-lexify-skipped')) return;
 
   const text = segment.textContent || '';
-
   const lang = getCaptionLanguage();
   const isEnglish = lang ? lang.startsWith('en') : isLikelyEnglish(text);
+
   if (!isEnglish) {
     segment.setAttribute('data-lexify-skipped', 'true');
     if (!(window as any).lexifyNonEnglishShown) {
@@ -420,12 +467,11 @@ const tokenizeCaptionSegment = (segment: HTMLElement) => {
   }
 
   segment.setAttribute('data-lexify-tokenized', 'true');
-  const words = text.split(/([\s ]+)/);
-
+  const words = text.split(/([\s ]+)/);
   segment.textContent = '';
 
   words.forEach(word => {
-    if (/^[\s ]+$/.test(word)) {
+    if (/^[\s ]+$/.test(word)) {
       segment.appendChild(document.createTextNode(word));
     } else {
       const span = document.createElement('span');
@@ -433,25 +479,15 @@ const tokenizeCaptionSegment = (segment: HTMLElement) => {
       span.className = 'lexify-word';
       span.style.cssText = 'pointer-events: auto !important; display: inline-block; border-radius: 4px; transition: background-color 0.15s; cursor: pointer !important;';
 
-      span.addEventListener('mouseenter', () => {
-        span.style.backgroundColor = 'rgba(77, 163, 255, 0.3)';
-      });
-      span.addEventListener('mouseleave', () => {
-        span.style.backgroundColor = 'transparent';
-      });
+      span.addEventListener('mouseenter', () => { span.style.backgroundColor = 'rgba(77, 163, 255, 0.3)'; });
+      span.addEventListener('mouseleave', () => { span.style.backgroundColor = 'transparent'; });
       span.addEventListener('click', (e) => {
         e.stopPropagation();
         const targetWord = span.textContent?.trim().replace(/[^a-zA-Z]/g, '') || "";
         if (targetWord) {
-          // Hard lock the video playback
-          if (currentVideo && !currentVideo.paused) {
-            currentVideo.pause();
-          }
+          if (currentVideo && !currentVideo.paused) currentVideo.pause();
           if (pauseTimeout) clearTimeout(pauseTimeout);
-
           dispatchDefinitionEvent('PERSISTENT_OPEN', null, targetWord);
-
-          // If they clicked a DIFFERENT word than they are currently hovering, we need to fetch it immediately
           if (targetWord !== currentWord) {
             currentWord = targetWord;
             fetchDefinitionForWord(targetWord, span.closest('.ytp-caption-segment') as HTMLElement);
@@ -465,34 +501,39 @@ const tokenizeCaptionSegment = (segment: HTMLElement) => {
 };
 
 const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
+  const thisRequestId = ++fetchRequestId;
   const sentence = captionSegment?.textContent?.trim() || '';
   dispatchDefinitionEvent('LOADING', { sentence }, word);
+  startControlsKeepAlive();
 
-  // Safety net: if background never responds (e.g. service worker cold-start), clear loading after 12s
   const fallbackTimer = setTimeout(() => {
+    if (thisRequestId !== fetchRequestId && !(window as any).lexifyIsPersistent) return;
     dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Could not fetch definition. Please try again.' });
   }, 12000);
 
   chrome.runtime.sendMessage({ type: 'FETCH_DEFINITION', word, sentence }, (response) => {
     clearTimeout(fallbackTimer);
+
+    // Discard stale responses — user already hovered away (unless in persistent/click mode)
+    if (thisRequestId !== fetchRequestId && !(window as any).lexifyIsPersistent) return;
+
     if (chrome.runtime.lastError) {
-      console.error('[Lexify] SendMessage Error:', chrome.runtime.lastError);
       dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Connection error with extension background.' });
       return;
     }
 
-    if (response && response.status === 'require_login') {
+    if (response?.status === 'require_login') {
       dispatchDefinitionEvent('REQUIRE_LOGIN', null, word);
       chrome.runtime.sendMessage({ type: 'OPEN_POPUP' });
       return;
     }
 
-    if (response && response.status === 'quota_exceeded') {
+    if (response?.status === 'quota_exceeded') {
       dispatchDefinitionEvent('SUCCESS', { word, meaning: 'Daily limit reached. Upgrade to Pro for unlimited lookups.' });
       return;
     }
 
-    if (response && response.status === 'success') {
+    if (response?.status === 'success') {
       const data = response.definition;
       let meaningString = '';
       let phoneticText = '';
@@ -508,25 +549,19 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
         const phonetics = exactMatch?.phonetics || [];
         etymology = exactMatch?.etymology || '';
         tip = exactMatch?.tip || '';
-        // AI responses include cefr directly; dictionary responses get static lookup
         cefr = exactMatch?.cefr || lookupCefr(word) || '';
 
         for (const p of phonetics) {
           if (p.text && !phoneticText) phoneticText = p.text;
           if (p.audio && !audioUrl) audioUrl = p.audio;
         }
-        if (!phoneticText && exactMatch?.phonetic) {
-          phoneticText = exactMatch.phonetic;
-        }
+        if (!phoneticText && exactMatch?.phonetic) phoneticText = exactMatch.phonetic;
 
         const uniquePoS = new Set();
         for (const m of meanings) {
-          if (m.definitions && m.definitions.length > 0 && !uniquePoS.has(m.partOfSpeech)) {
+          if (m.definitions?.length > 0 && !uniquePoS.has(m.partOfSpeech)) {
             uniquePoS.add(m.partOfSpeech);
-            meaningsList.push({
-              partOfSpeech: m.partOfSpeech,
-              definition: m.definitions[0].definition,
-            });
+            meaningsList.push({ partOfSpeech: m.partOfSpeech, definition: m.definitions[0].definition });
           }
           if (meaningsList.length >= 4) break;
         }
@@ -547,7 +582,6 @@ const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
           type: 'SAVE_WORD',
           payload: { word, meaning: meaningString, videoUrl: window.location.href, timestamp, contextSentence: sentence, source: response.source ?? 'dictionary' }
         }, () => {});
-
       } else {
         dispatchDefinitionEvent('SUCCESS', { word, meaning: "Definition not found." });
       }
@@ -573,10 +607,7 @@ const onWordHover = (event: MouseEvent) => {
 
   const rawWord = wordSpan.textContent?.trim() || "";
   const word = rawWord.replace(/[^a-zA-Z]/g, '');
-
   if (!word || word === currentWord) return;
-
-  // If panel is persistent for another word, don't auto-switch on hover
   if ((window as any).lexifyIsPersistent) return;
 
   currentWord = word;
@@ -591,7 +622,6 @@ const onWordHover = (event: MouseEvent) => {
         currentVideo.pause();
       }
     }, 300);
-
     fetchDefinitionForWord(word, captionSegment);
   }, 200) as unknown as number;
 };
@@ -601,6 +631,12 @@ const onWordHoverOut = () => {
   if (hoverTimeout) {
     clearTimeout(hoverTimeout);
     hoverTimeout = null;
+  }
+
+  // Immediately invalidate any in-flight fetch so the response is discarded when it arrives
+  if (!(window as any).lexifyIsPersistent) {
+    fetchRequestId++;
+    stopControlsKeepAlive();
   }
 
   setTimeout(() => {
@@ -631,26 +667,51 @@ const setupSubtitleObserver = () => {
   }
 };
 
-// Ensure we don't miss the load event if Chrome injects late (document_idle)
+// Observe the YouTube controls bar height and report it to React for dynamic positioning
+let controlsResizeObserver: ResizeObserver | null = null;
+
+const setupControlsObserver = () => {
+  const bar = document.querySelector('.ytp-chrome-bottom') as HTMLElement | null;
+  if (!bar) {
+    setTimeout(setupControlsObserver, 1500);
+    return;
+  }
+  if (controlsResizeObserver) controlsResizeObserver.disconnect();
+  controlsResizeObserver = new ResizeObserver(() => {
+    const h = (document.querySelector('.ytp-chrome-bottom') as HTMLElement)?.offsetHeight ?? 0;
+    dispatchDefinitionEvent('CONTROLS_HEIGHT', { height: h });
+  });
+  controlsResizeObserver.observe(bar);
+  dispatchDefinitionEvent('CONTROLS_HEIGHT', { height: bar.offsetHeight });
+};
+
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   setupSubtitleObserver();
+  setupControlsObserver();
 } else {
-  window.addEventListener('load', setupSubtitleObserver);
+  window.addEventListener('load', () => {
+    setupSubtitleObserver();
+    setupControlsObserver();
+  });
 }
+
 window.addEventListener('yt-navigate-finish', () => {
   (window as any).lexifyNonEnglishShown = false;
   dispatchDefinitionEvent('VIDEO_CHANGE');
-  setTimeout(setupSubtitleObserver, 1000);
+  setTimeout(() => {
+    setupSubtitleObserver();
+    setupControlsObserver();
+  }, 1000);
 });
 
-// Keep the window variable in sync with React state so vanilla JS can block hovers/resume
+// Sync persistent state to vanilla JS so hover/click logic can check it
 window.addEventListener('LEXIFY_DEFINITION', (e: Event) => {
   const details = (e as CustomEvent).detail;
   if (details.type === 'PERSISTENT_OPEN') {
     (window as any).lexifyIsPersistent = true;
   } else if (details.type === 'PERSISTENT_CLOSE') {
     (window as any).lexifyIsPersistent = false;
-    // Force unpause video physically when they explicitly click close
+    stopControlsKeepAlive();
     if (currentVideo && currentVideo.paused) currentVideo.play();
     currentWord = null;
   }
