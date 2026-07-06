@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Welcome to Lexify</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "surface-container-highest": "#E2E8F0",
+          "inverse-primary": "#00315b",
+          "surface-container-high": "#EDF2F7",
+          "background": "#F7F9FB",
+          "outline": "#64748B",
+          "surface-container": "#FFFFFF",
+          "secondary-container": "#04e1ee",
+          "on-error": "#ffffff",
+          "secondary": "#006066",
+          "on-primary": "#ffffff",
+          "on-secondary-container": "#002022",
+          "active-glow": "rgba(56, 242, 255, 0.4)",
+          "surface-variant": "#F1F5F9",
+          "on-surface": "#0F172A",
+          "outline-variant": "#CBD5E1",
+          "inverse-surface": "#1e293b",
+          "on-secondary": "#ffffff",
+          "on-surface-variant": "#475569",
+          "surface-container-low": "#F8FAFC",
+          "frost-blue": "#E0F2FE",
+          "on-primary-container": "#ffffff",
+          "primary-container": "#386090",
+          "primary": "#0F172A",
+          "on-background": "#0F172A",
+          "surface": "#F7F9FB",
+          "surface-container-lowest": "#FFFFFF",
+          "surface-stroke": "rgba(15, 23, 42, 0.08)",
+          "surface-dim": "#F1F5F9",
+          "liquid-blue": "rgba(77, 163, 255, 0.15)",
+          "error": "#ba1a1a"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "1rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "inner-gap": "8px",
+          "overlay-margin": "24px",
+          "unit": "4px",
+          "container-padding": "16px",
+          "gutter": "12px",
+          "max-width": "896px"
+        },
+        "fontFamily": {
+          "headline-md": ["Inter"],
+          "label-sm": ["Inter"],
+          "body-base": ["Inter"],
+          "display-lg": ["Inter"],
+          "caption": ["Inter"]
+        },
+        "fontSize": {
+          "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+          "label-sm": ["12px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+          "body-base": ["15px", {"lineHeight": "1.6", "fontWeight": "400"}],
+          "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+          "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "400"}]
+        }
+      },
+    },
+  }
+</script>
+<style>
+  body {
+    background-color: #F7F9FB;
+    color: #0F172A;
+    font-family: 'Inter', sans-serif;
+  }
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.04);
+  }
+  .liquid-glow {
+    box-shadow: 0 8px 30px rgba(77, 163, 255, 0.18);
+  }
+  .active-ring:hover {
+    box-shadow: 0 0 25px rgba(56, 242, 255, 0.25);
+  }
+  .primary-gradient {
+    background: linear-gradient(135deg, #0F172A 0%, #334155 100%);
+  }
+  .blue-gradient {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  }
+</style>
+</head>
+<body class="bg-surface text-on-surface">
+
+<!-- Logo header (no navbar) -->
+<div class="pt-10 pb-2 flex flex-col items-center gap-1">
+  <div class="flex items-center gap-2">
+    <!-- SVG Logo mark -->
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="36" height="36" rx="9" fill="white" stroke="#E2E6EB" stroke-width="0.75"/>
+      <defs>
+        <linearGradient id="logoG" x1="10" y1="5" x2="26" y2="31" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#06b6d4"/>
+        </linearGradient>
+      </defs>
+      <text x="19" y="27" text-anchor="middle" font-size="24" font-family="Georgia, serif" font-style="italic" fill="url(#logoG)">L</text>
+    </svg>
+    <span class="font-display-lg text-display-lg text-primary" style="font-size:28px;font-weight:800;letter-spacing:-0.5px;">Lexify</span>
+  </div>
+  <p class="text-sm text-on-surface-variant">Understand Every Word. Instantly.</p>
+</div>
+
+<main class="max-w-max-width mx-auto px-container-padding py-8 space-y-16">
+
+  <!-- Hero Section -->
+  <section class="relative group">
+    <div class="rounded-3xl overflow-hidden shadow-2xl relative h-[400px] md:h-[500px]">
+      <img
+        alt="Lexify Welcome"
+        class="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl8-sII92tUp-zvTmfPrbT4vRWaVrCxXM0atCTnFDv3aXcp2PGQua-rxuHHphJtsVLxTrm_JW48NwDwU4Z893EjHMxQqYtqpVfRPdqut_F6YySTWrI1opYVDpBXX5gIxtMSQRkW_YjcrjyKJDSGBiLiponhy158NNLKUtHsGYbgaihcXOjL8Np0IucwBUsBdRK_Ikp6l4iKulGn1f1rzZI3k2wqnc7SaIqXP1WnpviOPM0TzT96ii98E9LRjvQi0ucd0cCguJqDD13"
+      >
+      <div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent flex flex-col justify-end p-8 md:p-12">
+        <div class="glass-panel p-8 rounded-2xl max-w-2xl transform transition-all duration-500 group-hover:-translate-y-2">
+          <h1 class="font-display-lg text-display-lg md:text-5xl text-on-surface mb-4">Grow your vocab as you watch.</h1>
+          <p class="font-body-base text-body-base text-on-surface-variant max-w-lg mb-8">
+            Hover any subtitle word on YouTube and get an instant, AI-powered definition — in context, with pronunciation, etymology, and memory tips. Every word you look up is saved automatically to your personal dashboard.
+          </p>
+          <a
+            href="https://youtubelexify.com/dashboard"
+            class="primary-gradient text-white px-8 py-4 rounded-full font-bold inline-flex items-center gap-3 liquid-glow transition-all hover:scale-105 active:scale-95 cursor-pointer no-underline"
+            style="text-decoration:none;"
+          >
+            Go To Dashboard
+            <span class="material-symbols-outlined">rocket_launch</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="absolute -top-12 -left-12 w-64 h-64 bg-secondary-container/10 blur-[100px] rounded-full -z-10"></div>
+    <div class="absolute -bottom-12 -right-12 w-64 h-64 bg-primary/10 blur-[100px] rounded-full -z-10"></div>
+  </section>
+
+  <!-- Features Bento Grid -->
+  <section class="space-y-10">
+    <div class="text-center space-y-4">
+      <h2 class="font-headline-md text-headline-md text-primary">Your Intelligent Toolkit</h2>
+      <p class="font-body-base text-body-base text-on-surface-variant max-w-md mx-auto">Master any language through the content you already love.</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
+
+      <!-- Feature 1: Hover to Define -->
+      <div class="glass-panel p-8 rounded-xl active-ring group transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-full bg-frost-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-primary text-3xl">subtitles</span>
+        </div>
+        <h3 class="font-headline-md text-headline-md mb-3">Hover to Define</h3>
+        <p class="font-body-base text-body-base text-on-surface-variant">
+          Simply hover any highlighted subtitle word and an instant definition card appears — no clicking, no tab switching, no interruptions.
+        </p>
+      </div>
+
+      <!-- Feature 2: AI Context -->
+      <div class="glass-panel p-8 rounded-xl active-ring group transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-full bg-frost-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-primary text-3xl">menu_book</span>
+        </div>
+        <h3 class="font-headline-md text-headline-md mb-3">AI-Powered Context</h3>
+        <p class="font-body-base text-body-base text-on-surface-variant">
+          AI understands what the word means in that exact sentence — so definitions are precise, contextual, and actually useful.
+        </p>
+      </div>
+
+      <!-- Feature 3: Auto Vocabulary Tracker -->
+      <div class="glass-panel p-8 rounded-xl active-ring group transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-full bg-frost-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-primary text-3xl">folder_shared</span>
+        </div>
+        <h3 class="font-headline-md text-headline-md mb-3">Auto Vocabulary Tracker</h3>
+        <p class="font-body-base text-body-base text-on-surface-variant">
+          Every word you look up is automatically saved to your personal dashboard, along with the video timestamp and sentence context.
+        </p>
+      </div>
+
+      <!-- Feature 4: Export Anywhere -->
+      <div class="glass-panel p-8 rounded-xl active-ring group transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-full bg-frost-blue flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <span class="material-symbols-outlined text-primary text-3xl">file_download</span>
+        </div>
+        <h3 class="font-headline-md text-headline-md mb-3">Export Anywhere</h3>
+        <p class="font-body-base text-body-base text-on-surface-variant">
+          Export your saved vocabulary as a CSV file and import it into Anki, Quizlet, or any flashcard app — your words, your way.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="w-full py-12 px-container-padding flex flex-col items-center gap-inner-gap max-w-max-width mx-auto text-center border-t border-surface-stroke mt-16 bg-surface-container-lowest">
+  <div class="font-headline-md text-headline-md text-on-surface mb-4">Lexify</div>
+  <div class="flex flex-wrap justify-center gap-6 mb-8">
+    <a class="text-outline hover:text-primary transition-colors duration-300 font-label-sm text-label-sm cursor-pointer" href="https://youtubelexify.com/privacy">Privacy Policy</a>
+    <a class="text-outline hover:text-primary transition-colors duration-300 font-label-sm text-label-sm cursor-pointer" href="https://youtubelexify.com/terms">Terms of Service</a>
+    <a class="text-outline hover:text-primary transition-colors duration-300 font-label-sm text-label-sm cursor-pointer" href="https://youtubelexify.com">Help Center</a>
+    <a class="text-outline hover:text-primary transition-colors duration-300 font-label-sm text-label-sm cursor-pointer" href="mailto:hi@youtubelexify.com">Contact Us</a>
+  </div>
+  <p class="font-caption text-caption text-outline opacity-80">© 2025 YouTube Lexify. All rights reserved.</p>
+</footer>
+
+<script>
+  // Mouse-tracking light effect on glass panels
+  document.querySelectorAll('.glass-panel').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      card.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.6) 55%)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.background = 'rgba(255, 255, 255, 0.6)';
+    });
+  });
+</script>
+
+</body>
+</html>

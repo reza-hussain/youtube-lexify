@@ -104,27 +104,54 @@ export class AuthService {
 
   async verifyChromeToken(accessToken: string, req?: Request) {
      try {
-       // Chrome Identity API gives us an access token
+       // Chrome Identity API gives us an access token (not an ID token)
        const tokenInfo = await this.googleClient.getTokenInfo(accessToken);
-       
+
        if (!tokenInfo || !tokenInfo.email) {
           throw new UnauthorizedException('Invalid Google token');
        }
 
-       // Find or create user
+       // getTokenInfo only returns email — fetch full profile for name + avatar
+       let googleName: string | null = null;
+       let googleAvatar: string | null = null;
+       try {
+         const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+           headers: { Authorization: `Bearer ${accessToken}` },
+         });
+         if (profileRes.ok) {
+           const profile: any = await profileRes.json();
+           googleName = profile.name || profile.given_name || null;
+           googleAvatar = profile.picture || null;
+         }
+       } catch {
+         // Profile fetch is best-effort; don't block auth if it fails
+       }
+
        let user = await this.prisma.user.findUnique({
           where: { email: tokenInfo.email }
        });
+
+       const isNewUser = !user;
 
        if (!user) {
          user = await this.prisma.user.create({
             data: {
                email: tokenInfo.email,
-               name: tokenInfo.email.split('@')[0], // simplistic fallback
+               name: googleName || tokenInfo.email.split('@')[0],
+               avatar: googleAvatar,
             }
          });
          this.emailService.sendWelcomeEmail(user.email, user.name || 'User');
          this.emailService.sendAdminNewUserAlert(user.email, user.name || 'User');
+       } else if (googleName || googleAvatar) {
+         // Always sync name and avatar from Google so they stay up to date
+         user = await this.prisma.user.update({
+           where: { id: user.id },
+           data: {
+             ...(googleName ? { name: googleName } : {}),
+             ...(googleAvatar ? { avatar: googleAvatar } : {}),
+           }
+         });
        }
 
        const payload = { email: user.email, sub: user.id };
@@ -133,6 +160,7 @@ export class AuthService {
           access_token: this.jwtService.sign(payload),
           session_id: sessionId,
           user,
+          isNewUser,
        };
 
      } catch (err) {
