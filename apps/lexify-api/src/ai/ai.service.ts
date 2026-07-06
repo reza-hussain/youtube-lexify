@@ -66,16 +66,27 @@ ${extrasField}
 If a context sentence is provided, tailor the definition to that exact usage.${wantsExtras ? ' The user has seen this word multiple times — make the definition and tip especially memorable.' : ''}`;
   }
 
-  /** Explain a full subtitle sentence in plain English. PRO only. */
+  /** Explain a full subtitle sentence in plain English. */
   async explainSentence(sentence: string): Promise<string | null> {
     try {
-      const message = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 200,
-        system: `You are a friendly English teacher helping a language learner understand YouTube content. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.`,
-        messages: [{ role: 'user', content: `Explain: "${sentence}"` }],
-      });
-      return (message.content[0] as any).text as string;
+      const apiKey = process.env.GEMINI_API_KEY;
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: 'You are a friendly English teacher helping a language learner understand YouTube subtitles. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.' }],
+            },
+            contents: [{ parts: [{ text: `Explain: "${sentence}"` }] }],
+            generationConfig: { maxOutputTokens: 200 },
+          }),
+        },
+      );
+      if (!res.ok) return null;
+      const data: any = await res.json();
+      return (data.candidates?.[0]?.content?.parts?.[0]?.text as string) ?? null;
     } catch {
       return null;
     }

@@ -160,10 +160,9 @@ export class WordHistoryService {
   async explainSentence(userId: string, sentence: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { subscriptionTier: true, status: true },
+      select: { status: true },
     });
     if (user.status === 'SUSPENDED') throw new ForbiddenException('Account suspended');
-    if (user.subscriptionTier !== 'PRO') throw new ForbiddenException('PRO subscription required');
     const explanation = await this.aiService.explainSentence(sentence);
     return { explanation };
   }

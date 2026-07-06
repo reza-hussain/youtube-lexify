@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import tailwindStyles from '../index.css?inline';
@@ -163,9 +163,36 @@ const LexifyOverlay = () => {
     }
   };
 
+  const persistDismissRef = useRef<number | null>(null);
+
+  const cancelPersistDismiss = () => {
+    if (persistDismissRef.current) {
+      clearTimeout(persistDismissRef.current);
+      persistDismissRef.current = null;
+    }
+  };
+
+  const schedulePersistDismiss = (delay = 2500) => {
+    cancelPersistDismiss();
+    persistDismissRef.current = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('LEXIFY_DEFINITION', { detail: { type: 'PERSISTENT_CLOSE' } }));
+    }, delay) as unknown as number;
+  };
+
   const closePanel = () => {
+    cancelPersistDismiss();
     window.dispatchEvent(new CustomEvent('LEXIFY_DEFINITION', { detail: { type: 'PERSISTENT_CLOSE' } }));
   };
+
+  // Auto-dismiss click-mode popup after 5 seconds; cancel when mouse is on it
+  useEffect(() => {
+    if (isPersistent) {
+      schedulePersistDismiss(5000);
+    } else {
+      cancelPersistDismiss();
+    }
+    return cancelPersistDismiss;
+  }, [isPersistent]);
 
   const handleExplainSentence = () => {
     if (!currentSentence || explanationLoading) return;
@@ -186,9 +213,7 @@ const LexifyOverlay = () => {
     );
   };
 
-  const containerClasses = isPersistent
-    ? "absolute top-24 right-[10vw] w-[450px] p-6 bg-slate-50/90 backdrop-blur-[40px] rounded-[24px] shadow-[0_30px_60px_rgba(0,0,0,0.12),0_10px_20px_rgba(0,0,0,0.05),0_0_0_1px_rgba(255,255,255,0.5)] pointer-events-auto"
-    : "absolute top-24 right-10 w-96 p-5 bg-[#E2E6EB80] backdrop-blur-[30px] rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 pointer-events-auto";
+  const containerClasses = "absolute top-24 right-10 w-96 p-5 bg-[#E2E6EB80] backdrop-blur-[30px] rounded-[18px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 pointer-events-auto";
 
   // Word panel sits above the controls bar, offset by controlsBottom
   const wordPanelStyle = { bottom: `${controlsBottom + 48}px`, left: '40px' };
@@ -205,8 +230,8 @@ const LexifyOverlay = () => {
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className={containerClasses}
-            onMouseEnter={() => (window as any).lexifyCancelHoverOut?.()}
-            onMouseLeave={() => { if (!(window as any).lexifyIsPersistent) (window as any).lexifyScheduleHoverOut?.(); }}
+            onMouseEnter={() => { (window as any).lexifyCancelHoverOut?.(); cancelPersistDismiss(); }}
+            onMouseLeave={() => { if ((window as any).lexifyIsPersistent) schedulePersistDismiss(2500); else (window as any).lexifyScheduleHoverOut?.(); }}
           >
             <motion.div layout="position" className="flex flex-col gap-2">
               {loading ? (
@@ -214,7 +239,6 @@ const LexifyOverlay = () => {
                   <div className="flex-1 space-y-3 py-1">
                     <div className="h-2 bg-[#0F172A]/10 rounded w-1/3"></div>
                     <div className="h-2 bg-[#0F172A]/10 rounded w-5/6"></div>
-                    {isPersistent && <div className="h-2 bg-[#0F172A]/10 rounded w-4/6 mt-4"></div>}
                   </div>
                 </div>
               ) : requireLogin ? (
@@ -224,66 +248,50 @@ const LexifyOverlay = () => {
                     <br />
                     <span className="text-[#4DA3FF] font-semibold">Please open the Lexify extension popup to sign in and continue!</span>
                   </p>
-                  {isPersistent && (
-                    <button onClick={closePanel} className="mt-2 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-200/50 px-3 py-1.5 rounded-full transition-colors">Close panel</button>
-                  )}
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className={`text-slate-800 font-bold capitalize tracking-tight ${isPersistent ? 'text-[24px]' : 'text-[18px] mb-1'}`}>
-                          {definitionData?.word}
-                        </h3>
-                        {definitionData?.cefr && <CefrBadge level={definitionData.cefr} />}
-                      </div>
-                      {isPersistent && definitionData?.phoneticText && (
-                        <div className="flex items-center gap-3 mt-1.5 mb-2">
-                          <span className="text-[14px] text-slate-500 font-medium tracking-wide bg-slate-200/50 px-2 py-0.5 rounded-md">
-                            {definitionData.phoneticText}
-                          </span>
-                          {definitionData?.audioUrl && (
-                            <button
-                              onClick={playAudio}
-                              className={`p-1.5 rounded-full transition-all flex items-center justify-center ${isPlayingAudio ? 'bg-blue-500 text-white shadow-md' : 'bg-slate-200/80 text-blue-600 hover:bg-slate-300 hover:text-blue-700 hover:shadow-sm'}`}
-                              title="Listen to pronunciation"
-                            >
-                              <VolumeIcon />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {isPersistent && (
-                      <button onClick={closePanel} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 rounded-full transition-colors mt-0.5">
-                        <CloseIcon />
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h3 className="text-slate-800 font-bold capitalize tracking-tight text-[18px]">
+                      {definitionData?.word}
+                    </h3>
+                    {definitionData?.cefr && <CefrBadge level={definitionData.cefr} />}
+                    {definitionData?.phoneticText && (
+                      <span className="text-[12px] text-slate-500 font-medium">{definitionData.phoneticText}</span>
+                    )}
+                    {definitionData?.audioUrl && (
+                      <button
+                        onClick={playAudio}
+                        className={`p-1 rounded-full transition-all flex items-center justify-center ${isPlayingAudio ? 'bg-blue-500 text-white' : 'text-blue-500 hover:bg-slate-200/80'}`}
+                        title="Listen to pronunciation"
+                      >
+                        <VolumeIcon />
                       </button>
                     )}
                   </div>
 
-                  <div className={`flex flex-col gap-1.5 ${isPersistent ? 'mt-3 border-t border-slate-200/60 pt-4' : ''}`}>
+                  <div className="flex flex-col gap-1.5">
                     {definitionData?.meanings && definitionData.meanings.length > 0 ? (
                       definitionData.meanings.map((m, i) => (
-                        <div key={i} className={`flex flex-col gap-0.5 ${isPersistent ? 'mb-3' : 'mb-1.5'}`}>
-                          <span className={`font-semibold italic text-blue-600 uppercase ${isPersistent ? 'text-[11px] tracking-wider mb-0.5' : 'text-[12px]'}`}>[{m.partOfSpeech}]</span>
-                          <p className={`text-slate-700 ${isPersistent ? 'text-[15px] leading-relaxed' : 'text-[14px] leading-snug'}`}>{m.definition}</p>
+                        <div key={i} className="flex flex-col gap-0.5 mb-1.5">
+                          <span className="font-semibold italic text-blue-600 uppercase text-[12px]">[{m.partOfSpeech}]</span>
+                          <p className="text-slate-700 text-[14px] leading-snug">{m.definition}</p>
                         </div>
                       ))
                     ) : (
-                      <p className={`text-slate-800 font-medium ${isPersistent ? 'text-[16px] leading-relaxed' : 'text-[15px] leading-relaxed'}`}>
+                      <p className="text-slate-800 font-medium text-[15px] leading-relaxed">
                         {definitionData?.meaning || "Definition not found."}
                       </p>
                     )}
 
-                    {isPersistent && definitionData?.etymology && (
-                      <div className="mt-3 pt-3 border-t border-slate-200/60">
+                    {definitionData?.etymology && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60">
                         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Etymology</p>
                         <p className="text-[13px] text-slate-600 leading-relaxed italic">{definitionData.etymology}</p>
                       </div>
                     )}
 
-                    {isPersistent && definitionData?.tip && (
+                    {definitionData?.tip && (
                       <div className="mt-2 p-3 bg-blue-50/80 rounded-xl border border-blue-100">
                         <p className="text-[11px] font-semibold text-blue-500 uppercase tracking-wider mb-1">Memory Tip</p>
                         <p className="text-[13px] text-blue-700 leading-relaxed">{definitionData.tip}</p>
