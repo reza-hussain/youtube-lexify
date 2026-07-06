@@ -68,18 +68,37 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
 
   /** Explain a full subtitle sentence in plain English. */
   async explainSentence(sentence: string): Promise<string | null> {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      console.error('[explainSentence] GEMINI_API_KEY is not set');
+      return null;
+    }
     try {
-      const message = await this.anthropic.messages.create({
-        model: 'claude-fable-5',
-        max_tokens: 200,
-        system: 'You are a friendly English teacher helping a language learner understand YouTube subtitles. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.',
-        messages: [{ role: 'user', content: `Explain: "${sentence}"` }],
-      });
-      const text = (message.content[0] as any).text as string ?? null;
-      if (!text) console.error('[explainSentence] Claude returned empty response');
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: 'You are a friendly English teacher helping a language learner understand YouTube subtitles. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.' }],
+            },
+            contents: [{ parts: [{ text: `Explain: "${sentence}"` }] }],
+            generationConfig: { maxOutputTokens: 200 },
+          }),
+        },
+      );
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[explainSentence] Gemini HTTP ${res.status}:`, errText);
+        return null;
+      }
+      const data: any = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text as string ?? null;
+      if (!text) console.error('[explainSentence] Gemini returned empty candidates:', JSON.stringify(data));
       return text;
     } catch (err) {
-      console.error('[explainSentence] Claude call failed:', err);
+      console.error('[explainSentence] fetch failed:', err);
       return null;
     }
   }
@@ -121,7 +140,7 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
     try {
       const apiKey = process.env.GEMINI_API_KEY;
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
