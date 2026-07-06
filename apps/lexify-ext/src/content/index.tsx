@@ -202,10 +202,8 @@ const LexifyOverlay = () => {
       { type: 'EXPLAIN_SENTENCE', sentence: currentSentence },
       (response) => {
         setExplanationLoading(false);
-        if (response?.status === 'success') {
+        if (response?.status === 'success' && response.explanation) {
           setExplanation(response.explanation);
-        } else if (response?.status === 'require_login') {
-          setExplanation('PRO subscription required to explain sentences.');
         } else {
           setExplanation('Could not explain this sentence. Try again.');
         }

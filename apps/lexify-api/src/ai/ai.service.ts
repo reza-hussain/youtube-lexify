@@ -68,8 +68,12 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
 
   /** Explain a full subtitle sentence in plain English. */
   async explainSentence(sentence: string): Promise<string | null> {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      console.error('[explainSentence] GEMINI_API_KEY is not set');
+      return null;
+    }
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
@@ -84,10 +88,17 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
           }),
         },
       );
-      if (!res.ok) return null;
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[explainSentence] Gemini HTTP ${res.status}:`, errText);
+        return null;
+      }
       const data: any = await res.json();
-      return (data.candidates?.[0]?.content?.parts?.[0]?.text as string) ?? null;
-    } catch {
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text as string ?? null;
+      if (!text) console.error('[explainSentence] Gemini returned empty candidates:', JSON.stringify(data));
+      return text;
+    } catch (err) {
+      console.error('[explainSentence] fetch failed:', err);
       return null;
     }
   }
