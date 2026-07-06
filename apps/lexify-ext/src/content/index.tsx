@@ -20,6 +20,12 @@ shadowRoot.appendChild(rootElement);
 
 document.body.appendChild(host);
 
+// Inject a global page-level style so YouTube's cursor:grab on the caption
+// window container cannot override our word spans
+const lexifyGlobalStyle = document.createElement('style');
+lexifyGlobalStyle.textContent = '.lexify-word { cursor: pointer !important; user-select: none !important; }';
+document.head.appendChild(lexifyGlobalStyle);
+
 const root = createRoot(rootElement);
 
 // Icons
@@ -647,6 +653,9 @@ const onWordHover = (event: MouseEvent) => {
 
   if (pauseTimeout) clearTimeout(pauseTimeout);
   if (hoverTimeout) clearTimeout(hoverTimeout);
+  // Cancel any pending hide-timer from the previous word so it doesn't
+  // increment fetchRequestId and kill this word's in-flight fetch
+  cancelHoverOut();
 
   hoverTimeout = window.setTimeout(() => {
     setTimeout(() => {

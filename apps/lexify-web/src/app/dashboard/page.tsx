@@ -55,6 +55,13 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
   const [activeFilter, setActiveFilter] = useState<'all' | 'favourites'>('all');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'az' | 'za' | 'most-encountered'>('newest');
+  const [expandedWords, setExpandedWords] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => setExpandedWords(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const [quota, setQuota] = useState<{ tier: string; remaining: number | null; dailyLimit: number | null } | null>(null);
   const [betaStatus, setBetaStatus] = useState<{ status: string; slotsRemaining: number } | null>(null);
   const [betaLoading, setBetaLoading] = useState(false);
@@ -756,7 +763,7 @@ export default function Dashboard() {
 
                       {word.encounters && word.encounters.length > 0 && (
                          <div className="pt-4 border-t border-slate-100 space-y-3">
-                            {word.encounters.slice(0, 2).map(encounter => (
+                            {(expandedWords.has(word.id) ? word.encounters : word.encounters.slice(0, 2)).map(encounter => (
                                <div key={encounter.id} className="bg-slate-50 rounded-xl p-3 text-sm">
                                   {encounter.contextSentence && (
                                      <p className="text-slate-600 italic mb-2">"{encounter.contextSentence}"</p>
@@ -780,8 +787,13 @@ export default function Dashboard() {
                                </div>
                             ))}
                             {word.encounters.length > 2 && (
-                               <button className="w-full text-center text-xs font-semibold text-blue-500 hover:text-blue-700 py-1 transition-colors">
-                                  View {word.encounters.length - 2} more encounters
+                               <button
+                                 onClick={() => toggleExpanded(word.id)}
+                                 className="w-full text-center text-xs font-semibold text-blue-500 hover:text-blue-700 py-1 transition-colors cursor-pointer"
+                               >
+                                 {expandedWords.has(word.id)
+                                   ? 'Show less'
+                                   : `View ${word.encounters.length - 2} more encounter${word.encounters.length - 2 > 1 ? 's' : ''}`}
                                </button>
                             )}
                          </div>
