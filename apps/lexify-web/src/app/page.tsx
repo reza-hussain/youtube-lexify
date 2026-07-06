@@ -54,9 +54,7 @@ export default function LandingPage() {
       <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 pb-2">
         <nav className="max-w-5xl mx-auto flex items-center justify-between bg-white border md:bg-white/85 md:backdrop-blur-2xl border-slate-200/70 rounded-2xl px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)_inset]">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[10px] bg-linear-to-tr from-blue-500 to-cyan-400 flex items-center justify-center shadow-sm shadow-blue-500/30">
-              <span className="text-white text-sm font-bold tracking-tight">L</span>
-            </div>
+            <img src="/logo.png" alt="Lexify" className="w-8 h-8 rounded-[10px] shadow-sm shadow-blue-500/30" />
             <span className="text-slate-800 font-bold text-[15px] tracking-tight">Youtube Lexify</span>
           </Link>
 
@@ -521,9 +519,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-200/60 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-500 to-cyan-400 flex items-center justify-center">
-              <span className="text-white text-sm font-bold">L</span>
-            </div>
+            <img src="/logo.png" alt="Lexify" className="w-8 h-8 rounded-xl" />
             <span className="text-slate-700 font-bold">Youtube Lexify</span>
           </Link>
 

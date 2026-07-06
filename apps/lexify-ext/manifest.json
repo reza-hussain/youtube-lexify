@@ -3,8 +3,18 @@
   "name": "YouTube Lexify",
   "version": "1.0.3",
   "description": "Understand Every Word. Instantly.",
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
   },
   "background": {
     "service_worker": "src/background/index.ts",

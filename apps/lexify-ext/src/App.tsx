@@ -16,35 +16,12 @@ interface StatsData {
   totalWords: number;
 }
 
-// SVG approximation of the actual Lexify logo — italic serif L with blue→cyan gradient
 const LexifyLogo = ({ size = 36 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="lexLogoG" x1="10" y1="5" x2="26" y2="31" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#3b82f6" />
-        <stop offset="100%" stopColor="#06b6d4" />
-      </linearGradient>
-    </defs>
-    <rect width="36" height="36" rx="9" fill="white" stroke="#e2e8f0" strokeWidth="0.75" />
-    <text x="19" y="27" textAnchor="middle" fontSize="24" fontFamily="Georgia, 'Times New Roman', serif" fontStyle="italic" fill="url(#lexLogoG)">
-      L
-    </text>
-  </svg>
+  <img src="/logo.png" alt="Lexify" width={size} height={size} style={{ borderRadius: 9, display: 'block' }} />
 );
 
 const LexifyLogoLarge = () => (
-  <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="lexLogoGL" x1="14" y1="8" x2="42" y2="48" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#3b82f6" />
-        <stop offset="100%" stopColor="#06b6d4" />
-      </linearGradient>
-    </defs>
-    <rect width="56" height="56" rx="14" fill="white" stroke="#e2e8f0" strokeWidth="0.75" />
-    <text x="29" y="42" textAnchor="middle" fontSize="38" fontFamily="Georgia, 'Times New Roman', serif" fontStyle="italic" fill="url(#lexLogoGL)">
-      L
-    </text>
-  </svg>
+  <img src="/logo.png" alt="Lexify" width={56} height={56} style={{ borderRadius: 14, display: 'block' }} />
 );
 
 const GearIcon = () => (
@@ -249,7 +226,7 @@ function App() {
               </button>
             </div>
             <p className="text-[11px] text-slate-400 mt-2 text-center">
-              {mode === 'hover' ? 'Hover over a subtitle word to see its meaning' : 'Click a subtitle word to see its meaning'}
+              {mode === 'hover' ? 'Hover a subtitle word to see its meaning' : 'Click a subtitle word to see its meaning'}
             </p>
           </div>
 
