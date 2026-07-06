@@ -199,6 +199,8 @@ const LexifyOverlay = () => {
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ type: "spring", stiffness: 400, damping: 30 }}
             className={containerClasses}
+            onMouseEnter={() => (window as any).lexifyCancelHoverOut?.()}
+            onMouseLeave={() => { if (!(window as any).lexifyIsPersistent) (window as any).lexifyScheduleHoverOut?.(); }}
           >
             <motion.div layout="position" className="flex flex-col gap-2">
               {loading ? (
@@ -282,7 +284,7 @@ const LexifyOverlay = () => {
                       </div>
                     )}
 
-                    {isPersistent && currentSentence && (
+                    {currentSentence && (
                       <div className="mt-3 pt-3 border-t border-slate-200/60">
                         <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Context sentence</p>
                         <p className="text-[13px] text-slate-600 italic leading-relaxed mb-2">"{currentSentence}"</p>
@@ -376,6 +378,7 @@ root.render(<LexifyOverlay />);
 let currentVideo: HTMLVideoElement | null = null;
 let pauseTimeout: number | null = null;
 let hoverTimeout: number | null = null;
+let hoverOutTimer: number | null = null;
 let currentWord: string | null = null;
 let lexifyMode: 'hover' | 'click' = 'hover';
 
@@ -408,6 +411,35 @@ const stopControlsKeepAlive = () => {
     controlsKeepAliveTimer = null;
   }
 };
+
+const cancelHoverOut = () => {
+  if (hoverOutTimer !== null) {
+    clearTimeout(hoverOutTimer);
+    hoverOutTimer = null;
+  }
+};
+// Expose to React popup so onMouseEnter can cancel the timer
+(window as any).lexifyCancelHoverOut = cancelHoverOut;
+
+const scheduleHoverOut = () => {
+  cancelHoverOut();
+  hoverOutTimer = window.setTimeout(() => {
+    hoverOutTimer = null;
+    if (!(window as any).lexifyIsPersistent) {
+      fetchRequestId++;
+      stopControlsKeepAlive();
+      currentWord = null;
+      dispatchDefinitionEvent('CLEAR');
+    }
+    if (pauseTimeout) clearTimeout(pauseTimeout);
+    pauseTimeout = window.setTimeout(() => {
+      if (currentVideo && currentVideo.paused && !(window as any).lexifyIsPersistent) {
+        currentVideo.play();
+      }
+    }, 300) as unknown as number;
+  }, 500) as unknown as number;
+};
+(window as any).lexifyScheduleHoverOut = scheduleHoverOut;
 
 // Initialize mode from storage ASAP
 if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -632,25 +664,8 @@ const onWordHoverOut = () => {
     clearTimeout(hoverTimeout);
     hoverTimeout = null;
   }
-
-  // Immediately invalidate any in-flight fetch so the response is discarded when it arrives
-  if (!(window as any).lexifyIsPersistent) {
-    fetchRequestId++;
-    stopControlsKeepAlive();
-  }
-
-  setTimeout(() => {
-    if (Date.now() - (window as any).lastHoverTime > 200) {
-      currentWord = null;
-      dispatchDefinitionEvent('CLEAR');
-    }
-  }, 200);
-
-  pauseTimeout = window.setTimeout(() => {
-    if (currentVideo && currentVideo.paused && !(window as any).lexifyIsPersistent) {
-      currentVideo.play();
-    }
-  }, 300) as unknown as number;
+  // Give the user 500ms to move from the caption word to the popup before hiding
+  scheduleHoverOut();
 };
 
 const setupSubtitleObserver = () => {
