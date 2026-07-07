@@ -81,9 +81,9 @@ If a context sentence is provided, tailor the definition to that exact usage.${w
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: {
-              parts: [{ text: 'You are a friendly English teacher helping a language learner understand YouTube subtitles. Given a sentence, explain it in 2–3 short sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Plain text only — no markdown.' }],
+              parts: [{ text: 'You are a friendly English teacher helping a language learner understand YouTube subtitles. You will receive a short snippet of subtitle text (possibly spanning multiple caption lines). Explain what the speaker means in 2–3 plain sentences. Cover idioms, cultural references, unusual grammar, or implicit meaning. Ignore filler words like "uh" or "um". Plain text only — no markdown.' }],
             },
-            contents: [{ parts: [{ text: `Explain: "${sentence}"` }] }],
+            contents: [{ parts: [{ text: `Subtitle snippet: "${sentence}"` }] }],
             generationConfig: { maxOutputTokens: 200 },
           }),
         },

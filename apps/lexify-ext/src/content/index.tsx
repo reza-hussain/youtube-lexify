@@ -76,6 +76,7 @@ const LexifyOverlay = () => {
   const [showWordPanel, setShowWordPanel] = useState(false);
   const [wordListEnabled, setWordListEnabled] = useState(true);
   const [currentSentence, setCurrentSentence] = useState('');
+  const [contextBuffer, setContextBuffer] = useState('');
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explanationLoading, setExplanationLoading] = useState(false);
   // controlsBottom: safe bottom offset (px) to sit above YouTube's controls bar
@@ -103,6 +104,7 @@ const LexifyOverlay = () => {
         setRequireLogin(false);
         setDefinitionData({ word: customEvent.detail.word, meaning: '' });
         setCurrentSentence(customEvent.detail.payload?.sentence || '');
+        setContextBuffer(customEvent.detail.payload?.contextBuffer || customEvent.detail.payload?.sentence || '');
         setExplanation(null);
         setExplanationLoading(false);
       } else if (customEvent.detail.type === 'SUCCESS') {
@@ -199,7 +201,7 @@ const LexifyOverlay = () => {
     setExplanationLoading(true);
     setExplanation(null);
     chrome.runtime.sendMessage(
-      { type: 'EXPLAIN_SENTENCE', sentence: currentSentence },
+      { type: 'EXPLAIN_SENTENCE', sentence: contextBuffer || currentSentence },
       (response) => {
         setExplanationLoading(false);
         if (response?.status === 'success' && response.explanation) {
@@ -231,7 +233,7 @@ const LexifyOverlay = () => {
             onMouseEnter={() => { (window as any).lexifyCancelHoverOut?.(); cancelPersistDismiss(); }}
             onMouseLeave={() => { if ((window as any).lexifyIsPersistent) schedulePersistDismiss(2500); else (window as any).lexifyScheduleHoverOut?.(); }}
           >
-            <motion.div layout="position" className="flex flex-col gap-2">
+            <motion.div layout="position" className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
               {loading ? (
                 <div className="flex animate-pulse space-x-4">
                   <div className="flex-1 space-y-3 py-1">
@@ -386,6 +388,17 @@ const LexifyOverlay = () => {
 root.render(<LexifyOverlay />);
 
 // ─── Subtitle Interception Logic ──────────────────────────────────────────────
+
+// Rolling buffer of recent subtitle cue texts — used to build sentence context for AI
+const subtitleBuffer: string[] = [];
+const MAX_BUFFER_SIZE = 5;
+
+const pushToSubtitleBuffer = (text: string) => {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean || clean === subtitleBuffer[subtitleBuffer.length - 1]) return;
+  subtitleBuffer.push(clean);
+  if (subtitleBuffer.length > MAX_BUFFER_SIZE) subtitleBuffer.shift();
+};
 
 let currentVideo: HTMLVideoElement | null = null;
 let pauseTimeout: number | null = null;
@@ -547,7 +560,8 @@ const tokenizeCaptionSegment = (segment: HTMLElement) => {
 const fetchDefinitionForWord = (word: string, captionSegment?: HTMLElement) => {
   const thisRequestId = ++fetchRequestId;
   const sentence = captionSegment?.textContent?.trim() || '';
-  dispatchDefinitionEvent('LOADING', { sentence }, word);
+  const contextBuffer = subtitleBuffer.length > 0 ? subtitleBuffer.join(' ') : sentence;
+  dispatchDefinitionEvent('LOADING', { sentence, contextBuffer }, word);
   startControlsKeepAlive();
 
   const fallbackTimer = setTimeout(() => {
@@ -683,6 +697,8 @@ const onWordHoverOut = () => {
   scheduleHoverOut();
 };
 
+let captionMutationObserver: MutationObserver | null = null;
+
 const setupSubtitleObserver = () => {
   const videoPlayer = document.querySelector('video.html5-main-video') as HTMLVideoElement;
   if (videoPlayer) currentVideo = videoPlayer;
@@ -692,6 +708,23 @@ const setupSubtitleObserver = () => {
     captionContainer.setAttribute('data-lexify-bound', 'true');
     captionContainer.addEventListener('mouseover', onWordHover as EventListener);
     captionContainer.addEventListener('mouseleave', onWordHoverOut as EventListener);
+
+    // Populate subtitle buffer as new cues appear
+    if (captionMutationObserver) captionMutationObserver.disconnect();
+    captionMutationObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          const segments = node.classList.contains('ytp-caption-segment')
+            ? [node]
+            : Array.from(node.querySelectorAll('.ytp-caption-segment'));
+          for (const seg of segments) {
+            pushToSubtitleBuffer(seg.textContent || '');
+          }
+        }
+      }
+    });
+    captionMutationObserver.observe(captionContainer, { childList: true, subtree: true });
   } else if (!captionContainer) {
     setTimeout(setupSubtitleObserver, 1000);
   }
