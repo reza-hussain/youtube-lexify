@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,7 +11,6 @@ import { PreferenceModule } from './preference/preference.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { EmailModule } from './email/email.module';
 import { AdminModule } from './admin/admin.module';
-import { PingModule } from './ping/ping.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { UsersModule } from './users/users.module';
 import { BetaModule } from './beta/beta.module';
@@ -22,7 +20,6 @@ import { LoggingInterceptor } from './common/logging.interceptor';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{
        ttl: 60000,
        limit: 100
@@ -30,7 +27,7 @@ import { LoggingInterceptor } from './common/logging.interceptor';
     PrismaModule,
     AuthModule,
     WordHistoryModule,
-    PreferenceModule, EmailModule, AdminModule, PingModule, SubscriptionModule, UsersModule, BetaModule, FeedbackModule
+    PreferenceModule, EmailModule, AdminModule, SubscriptionModule, UsersModule, BetaModule, FeedbackModule
   ],
   controllers: [AppController],
   providers: [
