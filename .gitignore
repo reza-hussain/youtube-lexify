@@ -28,6 +28,9 @@ dist-ssr
 out/
 build/
 
+# packaged extension builds
+*.zip
+
 # NestJS
 .nest/
 
