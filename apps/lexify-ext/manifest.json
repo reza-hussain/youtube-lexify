@@ -50,8 +50,7 @@
   "host_permissions": [
     "*://*.youtube.com/*",
     "https://api.dictionaryapi.dev/*",
-    "http://localhost/*",
-    "https://*.onrender.com/*",
+    "https://youtube-lexify.onrender.com/*",
     "https://lexify.app/*",
     "https://youtubelexify.com/*"
   ],
