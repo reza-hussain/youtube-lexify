@@ -94,9 +94,8 @@ async function checkGuestQuota(): Promise<boolean> {
         return;
       }
 
-      chrome.storage.local.set(
-        { guestLookupCount: count + 1, guestLookupDate: today },
-        () => resolve(true),
+      chrome.storage.local.set({ guestLookupCount: count + 1, guestLookupDate: today }, () =>
+        resolve(true),
       );
     });
   });
@@ -106,7 +105,6 @@ async function checkGuestQuota(): Promise<boolean> {
 
 chrome.runtime.onMessage.addListener(
   (request: any, _sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
-
     // ── FETCH_DEFINITION ───────────────────────────────────────────────────
     if (request.type === 'FETCH_DEFINITION') {
       const word = request.word.toLowerCase().replace(/[^a-z]/g, '');
@@ -143,7 +141,10 @@ chrome.runtime.onMessage.addListener(
               return;
             }
           } catch (err) {
-            console.warn('[Lexify Background] Backend define failed, falling back to direct API:', err);
+            console.warn(
+              '[Lexify Background] Backend define failed, falling back to direct API:',
+              err,
+            );
           }
         }
 
@@ -194,32 +195,41 @@ chrome.runtime.onMessage.addListener(
       });
       const authUrl = `https://accounts.google.com/o/oauth2/auth?${params.toString()}`;
 
-      chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
-        if (chrome.runtime.lastError || !responseUrl) {
-          sendResponse({ status: 'error', error: chrome.runtime.lastError?.message ?? 'Sign-in cancelled' });
-          return;
-        }
-        try {
-          const hash = new URL(responseUrl).hash.slice(1);
-          const token = new URLSearchParams(hash).get('access_token');
-          if (!token) throw new Error('No access token in response');
+      chrome.identity.launchWebAuthFlow(
+        { url: authUrl, interactive: true },
+        async (responseUrl) => {
+          if (chrome.runtime.lastError || !responseUrl) {
+            sendResponse({
+              status: 'error',
+              error: chrome.runtime.lastError?.message ?? 'Sign-in cancelled',
+            });
+            return;
+          }
+          try {
+            const hash = new URL(responseUrl).hash.slice(1);
+            const token = new URLSearchParams(hash).get('access_token');
+            if (!token) throw new Error('No access token in response');
 
-          const res = await fetch(`${API_URL}/auth/chrome`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token }),
-          });
-          if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
-          const { access_token } = await res.json();
-          const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
-          await new Promise<void>(resolve => {
-            chrome.storage.local.set({ lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt, guestLookupCount: 0 }, resolve);
-          });
-          sendResponse({ status: 'success' });
-        } catch (err) {
-          sendResponse({ status: 'error', error: String(err) });
-        }
-      });
+            const res = await fetch(`${API_URL}/auth/chrome`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token }),
+            });
+            if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+            const { access_token } = await res.json();
+            const expiresAt = Date.now() + 25 * 24 * 60 * 60 * 1000;
+            await new Promise<void>((resolve) => {
+              chrome.storage.local.set(
+                { lexifyJwt: access_token, lexifyJwtExpiresAt: expiresAt, guestLookupCount: 0 },
+                resolve,
+              );
+            });
+            sendResponse({ status: 'success' });
+          } catch (err) {
+            sendResponse({ status: 'error', error: String(err) });
+          }
+        },
+      );
       return true;
     }
 
@@ -246,8 +256,7 @@ chrome.runtime.onMessage.addListener(
     if (request.type === 'FORCE_LOGOUT') {
       chrome.storage.local.remove(['lexifyJwt', 'lexifyJwtExpiresAt'], () => {
         chrome.identity.getAuthToken({ interactive: false }, (tokenResult: any) => {
-          const token =
-            typeof tokenResult === 'string' ? tokenResult : tokenResult?.token;
+          const token = typeof tokenResult === 'string' ? tokenResult : tokenResult?.token;
 
           if (!token) {
             sendResponse({ status: 'not_logged_in' });
@@ -281,14 +290,20 @@ chrome.runtime.onMessage.addListener(
     if (request.type === 'EXPLAIN_SENTENCE') {
       (async () => {
         const jwt = await getSilentJwt();
-        if (!jwt) { sendResponse({ status: 'require_login' }); return; }
+        if (!jwt) {
+          sendResponse({ status: 'require_login' });
+          return;
+        }
         try {
           const res = await fetch(`${API_URL}/words/explain-sentence`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ sentence: request.sentence }),
           });
-          if (!res.ok) { sendResponse({ status: 'error' }); return; }
+          if (!res.ok) {
+            sendResponse({ status: 'error' });
+            return;
+          }
           const data = await res.json();
           sendResponse({ status: 'success', explanation: data.explanation });
         } catch {
@@ -302,12 +317,18 @@ chrome.runtime.onMessage.addListener(
     if (request.type === 'GET_STATS') {
       (async () => {
         const jwt = await getSilentJwt();
-        if (!jwt) { sendResponse({ status: 'require_login' }); return; }
+        if (!jwt) {
+          sendResponse({ status: 'require_login' });
+          return;
+        }
         try {
           const res = await fetch(`${API_URL}/words/stats`, {
             headers: { Authorization: `Bearer ${jwt}` },
           });
-          if (!res.ok) { sendResponse({ status: 'error' }); return; }
+          if (!res.ok) {
+            sendResponse({ status: 'error' });
+            return;
+          }
           sendResponse({ status: 'success', ...(await res.json()) });
         } catch {
           sendResponse({ status: 'error' });
